@@ -5,7 +5,7 @@ import { Iproduct } from "./productModel";
 const cartStatusEnum = ["active", "completed"];
 
 // Define the interface for a single cart item
-export interface IcartItem extends Document {
+export interface IcartItem {
   product: Iproduct; // Reference to the product model
   unitPrice: number; // Price per unit of the product
   quantity: number; // Quantity of the product in the cart
