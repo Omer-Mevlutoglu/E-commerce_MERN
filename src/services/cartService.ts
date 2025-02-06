@@ -1,4 +1,5 @@
-import { cartModel } from "../models/cartModel";
+import { ReturnDocument } from "mongodb";
+import { cartModel, Icart, IcartItem } from "../models/cartModel";
 import productModel from "../models/productModel";
 
 interface CreateCartForUser {
@@ -124,10 +125,7 @@ export const updateItemInCart = async ({
     (p) => p.product.toString() !== productId
   );
 
-  let total = otherItemsInCart.reduce((sum, product) => {
-    sum += product.quantity * product.unitPrice;
-    return sum;
-  }, 0);
+  let total = calculateCartTotalItems({ cartItems: otherItemsInCart });
 
   // add the new updated product to the total
   existInCart.quantity = quantity;
@@ -138,3 +136,104 @@ export const updateItemInCart = async ({
 
   return { data: updatedCart, statusCode: 200 };
 };
+
+interface DeleteItemInCart {
+  productId: any; // ID of the product being added
+  userId: string; // ID of the user adding the item
+}
+export const deleteItemInCart = async ({
+  userId,
+  productId,
+}: DeleteItemInCart) => {
+  const cart = await getActiveCartForUser({ userId });
+
+  // Check if the product is already in the cart
+  const existInCart = cart.items.find(
+    (p) => p.product.toString() === productId
+  );
+
+  if (!existInCart) {
+    return { data: "Item is not in cart", statusCode: 400 };
+  }
+
+  const otherItemsInCart = cart.items.filter(
+    (p) => p.product.toString() !== productId
+  );
+  const total = calculateCartTotalItems({ cartItems: otherItemsInCart });
+
+  cart.items = otherItemsInCart;
+  cart.totalAmount = total;
+  const updatedCart = await cart.save();
+
+  return { data: updatedCart, statusCode: 200 };
+};
+
+const calculateCartTotalItems = ({ cartItems }: { cartItems: IcartItem[] }) => {
+  const total = cartItems.reduce((sum, product) => {
+    sum += product.quantity * product.unitPrice;
+    return sum;
+  }, 0);
+
+  return total;
+};
+
+interface ClearCart {
+  userId: string;
+}
+
+export const clearCart = async ({ userId }: ClearCart) => {
+  const cart = await getActiveCartForUser({ userId });
+  cart.items = [];
+  cart.totalAmount = 0;
+
+  const updatedCart = await cart.save();
+
+  return { data: updatedCart, statusCode: 200 };
+};
+
+// ---- this idea dependes on a quanity removal
+
+// interface DeleteItemInCart {
+//   productId: any; // ID of the product being added
+//   quantity: number; // Quantity of the product being added
+//   userId: string; // ID of the user adding the item
+// }
+
+// export const deleteItemInCart = async ({
+//   productId,
+//   quantity,
+//   userId,
+// }: DeleteItemInCart) => {
+//   const cart = await getActiveCartForUser({ userId });
+
+//   // Check if the product is already in the cart
+//   const existInCart = cart.items.find(
+//     (p) => p.product.toString() === productId
+//   );
+
+//   if (!existInCart) {
+//     return {
+//       data: "There is no item with this id in the cart or the user doesnt have an active cart",
+//       statusCode: 400,
+//     };
+//   }
+
+//   if (quantity <= 0) {
+//     return {
+//       data: "Entered quantity must be greater than zero",
+//       statusCode: 400,
+//     };
+//   }
+
+//   if (existInCart.quantity > quantity) {
+//     existInCart.quantity -= quantity;
+//     cart.totalAmount -= quantity * existInCart.unitPrice;
+//   } else {
+//     cart.totalAmount -= existInCart.quantity * existInCart.unitPrice; // Deduct full price
+//     cart.items = cart.items.filter((p) => p.product.toString() !== productId);
+//   }
+
+//   const updatedCart = await cart.save();
+
+//   return { data: updatedCart, statusCode: 200 };
+// };
