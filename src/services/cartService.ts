@@ -1,6 +1,7 @@
 import { ReturnDocument } from "mongodb";
 import { cartModel, Icart, IcartItem } from "../models/cartModel";
 import productModel from "../models/productModel";
+import { IorderItem, orderModel } from "../models/orderModel";
 
 interface CreateCartForUser {
   userId: string;
@@ -189,6 +190,50 @@ export const clearCart = async ({ userId }: ClearCart) => {
   const updatedCart = await cart.save();
 
   return { data: updatedCart, statusCode: 200 };
+};
+
+interface CheckOut {
+  userId: string;
+  address: string;
+}
+
+export const checkOut = async ({ userId, address }: CheckOut) => {
+  const cart = await getActiveCartForUser({ userId });
+
+  if (!address) {
+    return { data: "Address mudt be enetered", statusCode: 400 };
+  }
+  const orderItems: IorderItem[] = [];
+  // Loop on cart items and create order items from it
+  for (const item of cart.items) {
+    const product = await productModel.findById(item.product);
+
+    if (!product) {
+      return { data: "product not found", statusCode: 400 };
+    }
+
+    const orderItem: IorderItem = {
+      productTtile: product.title,
+      productImage: product.image,
+      unitprice: item.unitPrice,
+      quantity: item.quantity,
+    };
+
+    orderItems.push(orderItem);
+  }
+
+  const order = await orderModel.create({
+    orderItems,
+    total: cart.totalAmount,
+    address,
+    userId,
+  });
+
+  await order.save();
+  cart.status = "completed";
+  await cart.save();
+
+  return { data: order, statusCode: 200 };
 };
 
 // ---- this idea dependes on a quanity removal
