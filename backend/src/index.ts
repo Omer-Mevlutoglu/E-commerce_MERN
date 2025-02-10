@@ -1,5 +1,5 @@
 import dotenv from "dotenv";
-
+import cors from "cors";
 import express from "express";
 import mongoose from "mongoose";
 import userRoute from "./routes/userRoute";
@@ -10,6 +10,8 @@ import cartRoute from "./routes/cartRoute";
 dotenv.config();
 
 const app = express();
+
+app.use(cors());
 
 const port = 3001;
 
