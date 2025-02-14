@@ -1,5 +1,6 @@
 import { Box, Container, Typography, TextField, Button } from "@mui/material";
 import { useRef, useState } from "react";
+import { useAuth } from "../context/Auth/AuthContext";
 const BASE_URL = import.meta.env.VITE_BASE_URL;
 
 const RegisterPage = () => {
@@ -8,12 +9,17 @@ const RegisterPage = () => {
   const lastNameRef = useRef<HTMLInputElement>(null);
   const emailRef = useRef<HTMLInputElement>(null);
   const passowrdRef = useRef<HTMLInputElement>(null);
-
+  const { login } = useAuth();
   const HandleSunbmit = async () => {
     const firstName = firstNameRef.current?.value;
     const lastName = lastNameRef.current?.value;
     const email = emailRef.current?.value;
     const password = passowrdRef.current?.value;
+
+    if (!firstName || !lastName || !email || !password) {
+      setError("A7a");
+      return;
+    }
 
     const response = await fetch(`${BASE_URL}/users/register`, {
       method: "POST",
@@ -32,9 +38,11 @@ const RegisterPage = () => {
       );
       return;
     }
-    const data = await response.json();
-
-    console.log(data);
+    const token = await response.json();
+    if (!token) {
+      setError("No data is found");
+    }
+    login(email, token);
   };
   return (
     <Container>
