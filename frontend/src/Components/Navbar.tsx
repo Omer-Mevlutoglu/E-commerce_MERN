@@ -17,7 +17,7 @@ import { useNavigate } from "react-router-dom";
 const settings = ["My Orders", "Logout"];
 
 function Navbar() {
-  const { username, isAuthanticated } = useAuth();
+  const { username, isAuthanticated, logout } = useAuth();
   const [anchorElUser, setAnchorElUser] = React.useState<null | HTMLElement>(
     null
   );
@@ -31,6 +31,11 @@ function Navbar() {
   };
   const handleLogin = () => {
     navigate("/login");
+  };
+  const handleLogout = () => {
+    logout();
+    navigate("/");
+    handleCloseUserMenu();
   };
   return (
     <AppBar position="static">
@@ -135,7 +140,14 @@ function Navbar() {
                     onClose={handleCloseUserMenu}
                   >
                     {settings.map((setting) => (
-                      <MenuItem key={setting} onClick={handleCloseUserMenu}>
+                      <MenuItem
+                        key={setting}
+                        onClick={
+                          setting === "Logout"
+                            ? handleLogout
+                            : handleCloseUserMenu
+                        }
+                      >
                         <Typography sx={{ textAlign: "center" }}>
                           {setting}
                         </Typography>
