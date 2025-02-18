@@ -11,9 +11,9 @@ import Tooltip from "@mui/material/Tooltip";
 import MenuItem from "@mui/material/MenuItem";
 import AdbIcon from "@mui/icons-material/Adb";
 import { useAuth } from "../context/Auth/AuthContext";
-import { Grid2, Button } from "@mui/material";
+import { Grid2, Button, Badge } from "@mui/material";
 import { useNavigate } from "react-router-dom";
-
+import ShoppingCartIcon from "@mui/icons-material/ShoppingCart";
 const settings = ["My Orders", "Logout"];
 
 function Navbar() {
@@ -36,6 +36,9 @@ function Navbar() {
     logout();
     navigate("/");
     handleCloseUserMenu();
+  };
+  const handleCart = () => {
+    navigate("/cart");
   };
   return (
     <AppBar position="static">
@@ -100,7 +103,19 @@ function Navbar() {
                 Laptopia
               </Typography>
             </Box>
-            <Box sx={{ flexGrow: 0 }}>
+            <Box
+              sx={{ flexGrow: 0 }}
+              display="flex"
+              flexDirection="row"
+              alignItems="center"
+              justifyContent="center"
+              gap={2}
+            >
+              <IconButton aria-label="cart" onClick={handleCart}>
+                <Badge badgeContent={4} color="secondary">
+                  <ShoppingCartIcon sx={{ color: "white" }} />
+                </Badge>
+              </IconButton>
               {isAuthanticated ? (
                 <>
                   <Tooltip title="Open settings">
