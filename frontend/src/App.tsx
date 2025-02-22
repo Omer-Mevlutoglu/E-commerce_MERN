@@ -5,7 +5,8 @@ import RegisterPage from "./pages/RegisterPage";
 import AuthProvider from "./context/Auth/AuthProvider";
 import LoginPage from "./pages/LoginPage";
 import CartPage from "./pages/CartPage";
-import ProtectedRoute from "./Components/protectedRoute";
+import ProtectedRoute from "./Components/ProtectedRoute";
+
 
 function App() {
   return (
