@@ -17,6 +17,7 @@ const createCartForUser = async ({ userId }: CreateCartForUser) => {
 
 interface GetActiveCartForUser {
   userId: string;
+  populateProduct?: boolean;
 }
 
 // this function checks if the user has an active cart or not
@@ -25,8 +26,17 @@ interface GetActiveCartForUser {
 
 export const getActiveCartForUser = async ({
   userId,
+  populateProduct,
 }: GetActiveCartForUser) => {
-  let cart = await cartModel.findOne({ userId, status: "active" });
+  let cart;
+
+  if (populateProduct) {
+    cart = await cartModel
+      .findOne({ userId, status: "active" })
+      .populate("items.product");
+  } else {
+    cart = await cartModel.findOne({ userId, status: "active" });
+  }
 
   if (!cart) {
     cart = await createCartForUser({ userId });
@@ -80,10 +90,13 @@ export const addItemToCart = async ({
   cart.totalAmount += product.price * quantity;
 
   // Save the updated cart back to the database
-  const updatedCart = await cart.save();
+  await cart.save();
 
   // Return the updated cart data with a success status
-  return { data: updatedCart, statusCode: 200 };
+  return {
+    data: await getActiveCartForUser({ userId, populateProduct: true }),
+    statusCode: 200,
+  };
 };
 
 interface UpdateItemInCart {
@@ -133,9 +146,12 @@ export const updateItemInCart = async ({
 
   total += existInCart.quantity * existInCart.unitPrice;
   cart.totalAmount = total;
-  const updatedCart = await cart.save();
+  await cart.save();
 
-  return { data: updatedCart, statusCode: 200 };
+  return {
+    data: await getActiveCartForUser({ userId, populateProduct: true }),
+    statusCode: 200,
+  };
 };
 
 interface DeleteItemInCart {
@@ -164,9 +180,12 @@ export const deleteItemInCart = async ({
 
   cart.items = otherItemsInCart;
   cart.totalAmount = total;
-  const updatedCart = await cart.save();
+  await cart.save();
 
-  return { data: updatedCart, statusCode: 200 };
+  return {
+    data:await getActiveCartForUser({ userId, populateProduct: true }),
+    statusCode: 200,
+  };
 };
 
 const calculateCartTotalItems = ({ cartItems }: { cartItems: IcartItem[] }) => {

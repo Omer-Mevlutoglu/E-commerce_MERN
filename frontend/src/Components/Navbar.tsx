@@ -14,9 +14,11 @@ import { useAuth } from "../context/Auth/AuthContext";
 import { Grid2, Button, Badge } from "@mui/material";
 import { useNavigate } from "react-router-dom";
 import ShoppingCartIcon from "@mui/icons-material/ShoppingCart";
+import { useCart } from "../context/Cart/CartContext";
 const settings = ["My Orders", "Logout"];
 
 function Navbar() {
+  const { cartItem } = useCart();
   const { username, isAuthanticated, logout } = useAuth();
   const [anchorElUser, setAnchorElUser] = React.useState<null | HTMLElement>(
     null
@@ -72,7 +74,9 @@ function Navbar() {
                   fontFamily: "monospace",
                   fontWeight: 700,
                   textDecoration: "none",
+                  cursor: "pointer",
                 }}
+                onClick={() => navigate("/")}
               >
                 Laptopia
               </Typography>
@@ -84,6 +88,7 @@ function Navbar() {
                 alignItems: "center",
                 flexGrow: 1,
               }}
+              onClick={() => navigate("/")}
             >
               <AdbIcon sx={{ display: { xs: "flex", md: "none" }, mr: 1 }} />
 
@@ -112,7 +117,7 @@ function Navbar() {
               gap={2}
             >
               <IconButton aria-label="cart" onClick={handleCart}>
-                <Badge badgeContent={4} color="secondary">
+                <Badge badgeContent={cartItem.length} color="secondary">
                   <ShoppingCartIcon sx={{ color: "white" }} />
                 </Badge>
               </IconButton>
