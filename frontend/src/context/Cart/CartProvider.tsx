@@ -2,6 +2,7 @@ import { FC, PropsWithChildren, useEffect, useState } from "react";
 import { CartContext } from "./CartContext";
 import { CartItem } from "../../types/CartItem";
 import { useAuth } from "../Auth/AuthContext";
+import { Alert, Snackbar } from "@mui/material";
 const BASE_URL = import.meta.env.VITE_BASE_URL;
 
 const CartProvider: FC<PropsWithChildren> = ({ children }) => {
@@ -9,6 +10,17 @@ const CartProvider: FC<PropsWithChildren> = ({ children }) => {
   const [totalAmount, setTotalAmount] = useState<number>(0);
   const [error, setError] = useState("");
   const { token } = useAuth();
+  const [open, setOpen] = useState(false);
+  const handleClose = (
+    _event?: React.SyntheticEvent | Event,
+    reason?: string
+  ) => {
+    // If the user clicks away or the autoHideDuration expires, close the Snackbar
+    if (reason === "clickaway") {
+      return;
+    }
+    setOpen(false);
+  };
 
   useEffect(() => {
     if (!token) {
@@ -35,11 +47,12 @@ const CartProvider: FC<PropsWithChildren> = ({ children }) => {
             image: product.image,
             title: product.title,
             quantity,
-            unitPrice: product.unitPrice,
+            unitPrice: product.price,
           })
         );
 
         setCartItem([...cartItemsMapped]);
+        setTotalAmount(data.totalAmount);
       } catch {
         setError("Failed to get data");
       }
@@ -60,12 +73,19 @@ const CartProvider: FC<PropsWithChildren> = ({ children }) => {
       });
 
       if (!response.ok) {
-        setError("Failed to add to cart ");
+        setError(
+          "Item already exists in cart or an error has occured check your cart "
+        );
+
+        setOpen(true);
+        return;
       }
 
       const cart = await response.json();
       if (!cart) {
-        setError("No cart for this user ");
+        setError("No cart for this user");
+        setOpen(true);
+        return;
       }
 
       const cartItemsMapped = cart.items.map(
@@ -75,27 +95,43 @@ const CartProvider: FC<PropsWithChildren> = ({ children }) => {
           image: product.image,
           title: product.title,
           quantity,
-          unitPrice: product.unitPrice,
+          unitPrice: product.price,
         })
       );
 
       setCartItem([...cartItemsMapped]);
       setTotalAmount(cart.totalAmount);
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
     } catch (error) {
-      console.log(error);
+      setError("Item already exists in cart");
+      setOpen(true);
     }
   };
 
   return (
-    <CartContext.Provider
-      value={{
-        cartItem,
-        totalAmount,
-        addItemToCart,
-      }}
-    >
-      {children}
-    </CartContext.Provider>
+    <>
+      <CartContext.Provider
+        value={{
+          cartItem,
+          totalAmount,
+          addItemToCart,
+        }}
+      >
+        {children}
+      </CartContext.Provider>
+
+      {/* Snackbar with an Alert to show error messages */}
+      <Snackbar
+        open={open}
+        autoHideDuration={3000} // Hide after 3 seconds
+        onClose={handleClose}
+        anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
+      >
+        <Alert onClose={handleClose} severity="error" sx={{ width: "100%" }}>
+          {error}
+        </Alert>
+      </Snackbar>
+    </>
   );
 };
 
