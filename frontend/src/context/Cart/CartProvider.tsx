@@ -107,7 +107,7 @@ const CartProvider: FC<PropsWithChildren> = ({ children }) => {
 
       setCartItem([...cartItemsMapped]);
       setTotalAmount(cart.totalAmount);
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
     } catch (error) {
       showError("Item already exists in cart");
     }
@@ -153,9 +153,49 @@ const CartProvider: FC<PropsWithChildren> = ({ children }) => {
 
       setCartItem([...cartItemsMapped]);
       setTotalAmount(cart.totalAmount);
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
     } catch (error) {
       showError("Can't change the quantity");
+    }
+  };
+
+  const DeleteItemInCart = async (productId: string) => {
+    try {
+      const response = await fetch(`${BASE_URL}/cart/items/${productId}`, {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (!response.ok) {
+        showError("Failed to delete the item.");
+        return;
+      }
+
+      const cart = await response.json();
+      if (!cart) {
+        showError("No cart data available.");
+        return;
+      }
+
+      const cartItemsMapped = cart.items.map(
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        ({ product, quantity }: { product: any; quantity: number }) => ({
+          productId: product._id,
+          image: product.image,
+          title: product.title,
+          quantity,
+          unitPrice: product.price,
+          stock: product.stock,
+        })
+      );
+
+      setCartItem([...cartItemsMapped]);
+      setTotalAmount(cart.totalAmount);
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    } catch (error) {
+      showError("An error occurred while deleting the item.");
     }
   };
 
@@ -167,6 +207,7 @@ const CartProvider: FC<PropsWithChildren> = ({ children }) => {
           totalAmount,
           addItemToCart,
           updateItemInCart,
+          DeleteItemInCart,
           showError,
         }}
       >

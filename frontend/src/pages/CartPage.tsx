@@ -2,7 +2,13 @@ import { Box, Button, Container, Typography } from "@mui/material";
 import { useCart } from "../context/Cart/CartContext";
 
 const CartPage = () => {
-  const { cartItem, totalAmount, updateItemInCart, showError } = useCart();
+  const {
+    cartItem,
+    totalAmount,
+    updateItemInCart,
+    showError,
+    DeleteItemInCart,
+  } = useCart();
 
   const handleQuantity = (
     productId: string,
@@ -18,7 +24,9 @@ const CartPage = () => {
     }
     updateItemInCart(productId, quantity, stock);
   };
-
+  const removeItemInCart = (productId: string) => {
+    DeleteItemInCart(productId);
+  };
   return (
     <Container fixed sx={{ mt: 4 }}>
       <Typography variant="h4" gutterBottom>
@@ -104,6 +112,7 @@ const CartPage = () => {
                     color="error"
                     size="small"
                     sx={{ ml: 2 }}
+                    onClick={() => removeItemInCart(item.productId)}
                   >
                     Remove
                   </Button>
@@ -113,7 +122,7 @@ const CartPage = () => {
               {/* Price Calculation */}
               <Box>
                 <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
-                  {item.unitPrice * item.quantity} $
+                  {` ${item.quantity} x ${item.unitPrice} `} $
                 </Typography>
               </Box>
             </Box>
