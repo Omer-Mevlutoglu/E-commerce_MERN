@@ -1,7 +1,10 @@
-import { Box, Button, Container, Typography } from "@mui/material";
+import { Box, Button, Container, Typography, useTheme } from "@mui/material";
 import { useCart } from "../context/Cart/CartContext";
+import { useNavigate } from "react-router-dom";
 
 const CartPage = () => {
+  const theme = useTheme();
+  const navigate = useNavigate();
   const {
     cartItem,
     totalAmount,
@@ -15,104 +18,220 @@ const CartPage = () => {
     quantity: number,
     stock: number
   ) => {
-    if (quantity <= 0) {
-      return;
-    }
+    if (quantity <= 0) return;
     if (quantity > stock) {
       showError("Cannot add more items. Stock limit reached.");
       return;
     }
     updateItemInCart(productId, quantity, stock);
   };
+
   const removeItemInCart = (productId: string) => {
     DeleteItemInCart(productId);
   };
+
   return (
-    <Container fixed sx={{ mt: 4 }}>
-      <Typography variant="h4" gutterBottom>
-        My Cart
+    <Container maxWidth="lg" sx={{ py: 4, minHeight: "80vh" }}>
+      <Typography
+        variant="h4"
+        gutterBottom
+        sx={{
+          fontWeight: 700,
+          letterSpacing: 1,
+          textAlign: "center",
+          textTransform: "uppercase",
+          color: "text.primary",
+          mb: 4,
+        }}
+      >
+        Your Shopping Cart
       </Typography>
 
       {cartItem.length === 0 ? (
-        <Typography variant="body1">Your cart is empty.</Typography>
+        <Box
+          sx={{
+            textAlign: "center",
+            py: 10,
+            border: "2px dashed",
+            borderColor: "divider",
+            borderRadius: 4,
+            backgroundColor: "background.paper",
+          }}
+        >
+          <Typography variant="h6" sx={{ mb: 3 }}>
+            Your cart is empty
+          </Typography>
+          <Button
+            variant="contained"
+            color="primary"
+            onClick={() => navigate("/")}
+            sx={{
+              borderRadius: 20,
+              px: 4,
+              fontWeight: 600,
+              letterSpacing: 0.5,
+            }}
+          >
+            Browse Products
+          </Button>
+        </Box>
       ) : (
-        <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+        <Box sx={{ display: "flex", flexDirection: "column", gap: 3 }}>
           {cartItem.map((item) => (
             <Box
               key={item.productId}
               sx={{
                 display: "flex",
                 alignItems: "center",
-                p: 2,
-                border: "1px solid #e0e0e0",
-                borderRadius: 2,
-                gap: 2,
+                p: 3,
+                backgroundColor: "background.paper",
+                borderRadius: 4,
+                gap: 3,
+                boxShadow: 1,
+                transition: "transform 0.2s ease, box-shadow 0.2s ease",
+                "&:hover": {
+                  boxShadow: 3,
+                  transform: "translateY(-2px)",
+                },
               }}
             >
               {/* Product Image */}
               <Box
                 sx={{
-                  width: 80,
-                  height: 80,
+                  width: 120,
+                  height: 120,
                   flexShrink: 0,
                   overflow: "hidden",
-                  borderRadius: 1,
-                  border: "1px solid #ddd",
+                  borderRadius: 3,
+                  position: "relative",
+                  "&:after": {
+                    content: '""',
+                    position: "absolute",
+                    bottom: 0,
+                    left: 0,
+                    right: 0,
+                    height: "30%",
+                    background:
+                      "linear-gradient(to top, rgba(0,0,0,0.1) 0%, transparent 100%)",
+                  },
                 }}
               >
                 <img
                   src={item.image}
                   alt={item.title}
-                  style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                  style={{
+                    width: "100%",
+                    height: "100%",
+                    objectFit: "cover",
+                  }}
                 />
               </Box>
 
-              {/* Product Title and Controls */}
+              {/* Product Details */}
               <Box sx={{ flexGrow: 1 }}>
-                <Typography variant="h6">{item.title}</Typography>
-                <Box
-                  sx={{ display: "flex", alignItems: "center", gap: 1, mt: 1 }}
+                <Typography
+                  variant="h6"
+                  sx={{
+                    fontWeight: 600,
+                    mb: 1,
+                    color: "text.primary",
+                  }}
                 >
-                  <Typography variant="body2" color="text.secondary">
-                    Quantity:
-                  </Typography>
-                  <Button
-                    variant="outlined"
-                    color="primary"
-                    size="small"
-                    onClick={() =>
-                      handleQuantity(
-                        item.productId,
-                        item.quantity - 1,
-                        item.stock
-                      )
-                    }
+                  {item.title}
+                </Typography>
+
+                <Box
+                  sx={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 2,
+                    mt: 2,
+                  }}
+                >
+                  <Box
+                    sx={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 1,
+                      border: `1px solid ${theme.palette.divider}`,
+                      borderRadius: 2,
+                      p: 0.5,
+                    }}
                   >
-                    -
-                  </Button>
-                  <Typography variant="body2" color="text.secondary">
-                    {item.quantity}
-                  </Typography>
-                  <Button
-                    variant="outlined"
-                    color="primary"
-                    size="small"
-                    onClick={() =>
-                      handleQuantity(
-                        item.productId,
-                        item.quantity + 1,
-                        item.stock
-                      )
-                    }
-                  >
-                    +
-                  </Button>
+                    <Button
+                      variant="outlined"
+                      color="secondary"
+                      size="small"
+                      onClick={() =>
+                        handleQuantity(
+                          item.productId,
+                          item.quantity - 1,
+                          item.stock
+                        )
+                      }
+                      sx={{
+                        minWidth: 32,
+                        height: 32,
+                        borderRadius: 1,
+                        borderColor: "text.secondary",
+                        color: "text.primary",
+                        "&:hover": {
+                          borderColor: "primary.main",
+                          backgroundColor: "action.hover",
+                        },
+                      }}
+                    >
+                      -
+                    </Button>
+                    <Typography
+                      variant="body1"
+                      sx={{
+                        minWidth: 40,
+                        textAlign: "center",
+                        color: "text.primary",
+                      }}
+                    >
+                      {item.quantity}
+                    </Typography>
+                    <Button
+                      variant="outlined"
+                      color="secondary"
+                      size="small"
+                      onClick={() =>
+                        handleQuantity(
+                          item.productId,
+                          item.quantity + 1,
+                          item.stock
+                        )
+                      }
+                      sx={{
+                        minWidth: 32,
+                        height: 32,
+                        borderRadius: 1,
+                        borderColor: "text.secondary",
+                        color: "text.primary",
+                        "&:hover": {
+                          borderColor: "primary.main",
+                          backgroundColor: "action.hover",
+                        },
+                      }}
+                    >
+                      +
+                    </Button>
+                  </Box>
+
                   <Button
                     variant="text"
                     color="error"
                     size="small"
-                    sx={{ ml: 2 }}
                     onClick={() => removeItemInCart(item.productId)}
+                    sx={{
+                      fontWeight: 600,
+                      ml: 2,
+                      "&:hover": {
+                        backgroundColor: "error.light + 15",
+                      },
+                    }}
                   >
                     Remove
                   </Button>
@@ -120,28 +239,72 @@ const CartPage = () => {
               </Box>
 
               {/* Price Calculation */}
-              <Box>
-                <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
-                  {` ${item.quantity} x ${item.unitPrice} `} $
+              <Box sx={{ textAlign: "right" }}>
+                <Typography
+                  variant="subtitle1"
+                  sx={{
+                    fontWeight: 700,
+                    color: "primary.main",
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  ${(item.unitPrice * item.quantity).toFixed(2)}
+                </Typography>
+                <Typography
+                  variant="body2"
+                  sx={{
+                    color: "text.secondary",
+                    mt: 0.5,
+                  }}
+                >
+                  {item.quantity} x ${item.unitPrice}
                 </Typography>
               </Box>
             </Box>
           ))}
 
-          {/* Cart Summary / Checkout Section */}
+          {/* Checkout Section */}
           <Box
             sx={{
               display: "flex",
               justifyContent: "space-between",
               alignItems: "center",
-              p: 2,
-              border: "1px solid #e0e0e0",
-              borderRadius: 2,
+              p: 3,
+              backgroundColor: "background.paper",
+              borderRadius: 4,
+              boxShadow: 1,
+              mt: 2,
             }}
           >
-            <Typography variant="h6">Total: {totalAmount} $</Typography>
-            <Button variant="contained" color="primary">
-              Checkout
+            <Typography
+              variant="h5"
+              sx={{
+                fontWeight: 700,
+                color: "text.primary",
+              }}
+            >
+              Total: ${totalAmount.toFixed(2)}
+            </Typography>
+            <Button
+              variant="contained"
+              color="primary"
+              size="large"
+              sx={{
+                px: 4,
+                py: 1.5,
+                borderRadius: 2,
+                fontWeight: 600,
+                letterSpacing: 0.5,
+                textTransform: "uppercase",
+                boxShadow: "none",
+                "&:hover": {
+                  boxShadow: "0 4px 12px rgba(25, 118, 210, 0.3)",
+                  transform: "translateY(-1px)",
+                },
+                transition: "all 0.2s ease",
+              }}
+            >
+              Proceed to Checkout
             </Button>
           </Box>
         </Box>
