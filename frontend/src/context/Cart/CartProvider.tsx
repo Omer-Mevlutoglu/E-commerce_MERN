@@ -3,6 +3,7 @@ import { CartContext } from "./CartContext";
 import { CartItem } from "../../types/CartItem";
 import { useAuth } from "../Auth/AuthContext";
 import { Alert, Snackbar } from "@mui/material";
+
 const BASE_URL = import.meta.env.VITE_BASE_URL;
 
 const CartProvider: FC<PropsWithChildren> = ({ children }) => {
@@ -11,15 +12,21 @@ const CartProvider: FC<PropsWithChildren> = ({ children }) => {
   const [error, setError] = useState("");
   const { token } = useAuth();
   const [open, setOpen] = useState(false);
+
   const handleClose = (
     _event?: React.SyntheticEvent | Event,
     reason?: string
   ) => {
-    // If the user clicks away or the autoHideDuration expires, close the Snackbar
     if (reason === "clickaway") {
       return;
     }
     setOpen(false);
+  };
+
+  // Expose a function to trigger an error message via Snackbar
+  const showError = (message: string) => {
+    setError(message);
+    setOpen(true);
   };
 
   useEffect(() => {
@@ -48,13 +55,14 @@ const CartProvider: FC<PropsWithChildren> = ({ children }) => {
             title: product.title,
             quantity,
             unitPrice: product.price,
+            stock: product.stock,
           })
         );
 
         setCartItem([...cartItemsMapped]);
         setTotalAmount(data.totalAmount);
       } catch {
-        setError("Failed to get data");
+        showError("Failed to get data");
       }
     };
 
@@ -73,18 +81,15 @@ const CartProvider: FC<PropsWithChildren> = ({ children }) => {
       });
 
       if (!response.ok) {
-        setError(
-          "Item already exists in cart or an error has occured check your cart "
+        showError(
+          "Item already exists in cart or an error has occurred. Check your cart."
         );
-
-        setOpen(true);
         return;
       }
 
       const cart = await response.json();
       if (!cart) {
-        setError("No cart for this user");
-        setOpen(true);
+        showError("No cart for this user");
         return;
       }
 
@@ -96,15 +101,61 @@ const CartProvider: FC<PropsWithChildren> = ({ children }) => {
           title: product.title,
           quantity,
           unitPrice: product.price,
+          stock: product.stock,
         })
       );
 
       setCartItem([...cartItemsMapped]);
       setTotalAmount(cart.totalAmount);
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     } catch (error) {
-      setError("Item already exists in cart");
-      setOpen(true);
+      showError("Item already exists in cart");
+    }
+  };
+
+  const updateItemInCart = async (
+    productId: string,
+    quantity: number,
+    stock: number
+  ) => {
+    try {
+      const response = await fetch(`${BASE_URL}/cart/items`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ productId, quantity, stock }),
+      });
+
+      if (!response.ok) {
+        showError("Server error");
+        return;
+      }
+
+      const cart = await response.json();
+      if (!cart) {
+        showError("No cart for this user");
+        return;
+      }
+
+      const cartItemsMapped = cart.items.map(
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        ({ product, quantity }: { product: any; quantity: number }) => ({
+          productId: product._id,
+          image: product.image,
+          title: product.title,
+          quantity,
+          unitPrice: product.price,
+          stock: product.stock,
+        })
+      );
+
+      setCartItem([...cartItemsMapped]);
+      setTotalAmount(cart.totalAmount);
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    } catch (error) {
+      showError("Can't change the quantity");
     }
   };
 
@@ -115,15 +166,16 @@ const CartProvider: FC<PropsWithChildren> = ({ children }) => {
           cartItem,
           totalAmount,
           addItemToCart,
+          updateItemInCart,
+          showError,
         }}
       >
         {children}
       </CartContext.Provider>
 
-      {/* Snackbar with an Alert to show error messages */}
       <Snackbar
         open={open}
-        autoHideDuration={3000} // Hide after 3 seconds
+        autoHideDuration={3000}
         onClose={handleClose}
         anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
       >

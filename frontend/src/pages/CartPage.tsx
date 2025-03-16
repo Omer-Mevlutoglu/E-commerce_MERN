@@ -2,7 +2,22 @@ import { Box, Button, Container, Typography } from "@mui/material";
 import { useCart } from "../context/Cart/CartContext";
 
 const CartPage = () => {
-  const { cartItem, totalAmount } = useCart();
+  const { cartItem, totalAmount, updateItemInCart, showError } = useCart();
+
+  const handleQuantity = (
+    productId: string,
+    quantity: number,
+    stock: number
+  ) => {
+    if (quantity <= 0) {
+      return;
+    }
+    if (quantity > stock) {
+      showError("Cannot add more items. Stock limit reached.");
+      return;
+    }
+    updateItemInCart(productId, quantity, stock);
+  };
 
   return (
     <Container fixed sx={{ mt: 4 }}>
@@ -10,18 +25,10 @@ const CartPage = () => {
         My Cart
       </Typography>
 
-      {/* If cart is empty, display a simple message */}
       {cartItem.length === 0 ? (
         <Typography variant="body1">Your cart is empty.</Typography>
       ) : (
-        <Box
-          sx={{
-            display: "flex",
-            flexDirection: "column",
-            gap: 2,
-          }}
-        >
-          {/* Render each item in the cart */}
+        <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
           {cartItem.map((item) => (
             <Box
               key={item.productId}
@@ -55,25 +62,43 @@ const CartPage = () => {
               {/* Product Title and Controls */}
               <Box sx={{ flexGrow: 1 }}>
                 <Typography variant="h6">{item.title}</Typography>
-
-                {/* Quantity Controls (no logic, purely styling) */}
                 <Box
                   sx={{ display: "flex", alignItems: "center", gap: 1, mt: 1 }}
                 >
                   <Typography variant="body2" color="text.secondary">
                     Quantity:
                   </Typography>
-                  <Button variant="outlined" color="primary" size="small">
-                   -
+                  <Button
+                    variant="outlined"
+                    color="primary"
+                    size="small"
+                    onClick={() =>
+                      handleQuantity(
+                        item.productId,
+                        item.quantity - 1,
+                        item.stock
+                      )
+                    }
+                  >
+                    -
                   </Button>
                   <Typography variant="body2" color="text.secondary">
                     {item.quantity}
                   </Typography>
-                  <Button variant="outlined" color="primary" size="small">
+                  <Button
+                    variant="outlined"
+                    color="primary"
+                    size="small"
+                    onClick={() =>
+                      handleQuantity(
+                        item.productId,
+                        item.quantity + 1,
+                        item.stock
+                      )
+                    }
+                  >
                     +
                   </Button>
-
-                  {/* Remove Item Button (no logic) */}
                   <Button
                     variant="text"
                     color="error"
