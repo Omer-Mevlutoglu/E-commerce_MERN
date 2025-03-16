@@ -11,7 +11,7 @@ import Tooltip from "@mui/material/Tooltip";
 import MenuItem from "@mui/material/MenuItem";
 import AdbIcon from "@mui/icons-material/Adb";
 import { useAuth } from "../context/Auth/AuthContext";
-import { Grid2, Button, Badge } from "@mui/material";
+import { Button, Badge } from "@mui/material";
 import { useNavigate } from "react-router-dom";
 import ShoppingCartIcon from "@mui/icons-material/ShoppingCart";
 import { useCart } from "../context/Cart/CartContext";
@@ -43,108 +43,178 @@ function Navbar() {
     navigate("/cart");
   };
   return (
-    <AppBar position="static">
+    <AppBar
+      position="static"
+      sx={{
+        bgcolor: "primary.main",
+        boxShadow: "none",
+        borderBottom: "1px solid",
+        borderColor: "divider",
+        backgroundImage: "none",
+      }}
+    >
       <Container maxWidth="xl">
-        <Toolbar disableGutters>
+        <Toolbar disableGutters sx={{ py: 1 }}>
           <Box
             sx={{
               display: "flex",
               justifyContent: "space-between",
-              flexDirection: "row",
               width: "100%",
               alignItems: "center",
             }}
           >
+            {/* Logo Section */}
             <Box
               sx={{
                 display: "flex",
-                flexDirection: "row",
                 alignItems: "center",
-              }}
-            >
-              <AdbIcon sx={{ display: { xs: "none", md: "flex" }, mr: 1 }} />
-
-              <Typography
-                variant="h6"
-                noWrap
-                component="a"
-                sx={{
-                  mr: 2,
-                  display: { xs: "none", md: "flex" },
-                  fontFamily: "monospace",
-                  fontWeight: 700,
-                  textDecoration: "none",
-                  cursor: "pointer",
-                }}
-                onClick={() => navigate("/")}
-              >
-                Laptopia
-              </Typography>
-            </Box>
-            <Box
-              sx={{
-                display: "flex",
-                flexDirection: "row",
-                alignItems: "center",
-                flexGrow: 1,
+                gap: 1,
+                "&:hover": { cursor: "pointer" },
               }}
               onClick={() => navigate("/")}
             >
-              <AdbIcon sx={{ display: { xs: "flex", md: "none" }, mr: 1 }} />
-
-              <Typography
-                variant="h5"
-                noWrap
-                component="a"
+              <AdbIcon
                 sx={{
-                  mr: 2,
-                  display: { xs: "flex", md: "none" },
-                  flexGrow: 1,
-                  fontFamily: "monospace",
+                  fontSize: 32,
+                  color: "secondary.main",
+                  display: { xs: "none", md: "flex" },
+                }}
+              />
+              <Typography
+                variant="h6"
+                noWrap
+                sx={{
                   fontWeight: 700,
-                  textDecoration: "none",
+                  letterSpacing: 1.2,
+                  color: "common.white",
+                  transition: "color 0.3s ease",
+                  "&:hover": {
+                    color: "secondary.main",
+                  },
                 }}
               >
-                Laptopia
+                LAPTOPIA
               </Typography>
             </Box>
+
+            {/* Mobile Logo */}
             <Box
-              sx={{ flexGrow: 0 }}
-              display="flex"
-              flexDirection="row"
-              alignItems="center"
-              justifyContent="center"
-              gap={2}
+              sx={{
+                display: { xs: "flex", md: "none" },
+                alignItems: "center",
+                gap: 1,
+              }}
+              onClick={() => navigate("/")}
             >
-              <IconButton aria-label="cart" onClick={handleCart}>
-                <Badge badgeContent={cartItem.length} color="secondary">
-                  <ShoppingCartIcon sx={{ color: "white" }} />
+              <AdbIcon
+                sx={{
+                  fontSize: 28,
+                  color: "secondary.main",
+                  display: { xs: "flex", md: "none" },
+                }}
+              />
+              <Typography
+                variant="h6"
+                noWrap
+                sx={{
+                  fontWeight: 700,
+                  color: "common.white",
+                  fontSize: "1.25rem",
+                }}
+              >
+                LAPTOPIA
+              </Typography>
+            </Box>
+
+            {/* Right Section */}
+            <Box
+              sx={{
+                display: "flex",
+                alignItems: "center",
+                gap: 3,
+                color: "common.white",
+              }}
+            >
+              {/* Cart Icon */}
+              <IconButton
+                aria-label="cart"
+                onClick={handleCart}
+                sx={{
+                  "&:hover": {
+                    backgroundColor: "rgba(255, 255, 255, 0.08)",
+                  },
+                }}
+              >
+                <Badge
+                  badgeContent={cartItem.length}
+                  color="secondary"
+                  sx={{
+                    "& .MuiBadge-badge": {
+                      right: -4,
+                      top: 8,
+                      fontWeight: 600,
+                    },
+                  }}
+                >
+                  <ShoppingCartIcon
+                    sx={{
+                      fontSize: 28,
+                      color: "common.white",
+                      transition: "color 0.2s ease",
+                      "&:hover": {
+                        color: "secondary.main",
+                      },
+                    }}
+                  />
                 </Badge>
               </IconButton>
+
+              {/* User Section */}
               {isAuthanticated ? (
-                <>
-                  <Tooltip title="Open settings">
-                    <Grid2
-                      container
-                      alignItems="center"
-                      justifyContent="center"
-                      gap={2}
+                <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+                  <Tooltip title="Account settings">
+                    <IconButton
+                      onClick={handleOpenUserMenu}
+                      sx={{
+                        p: 0.5,
+                        border: "2px solid",
+                        borderColor: "common.white",
+                        "&:hover": {
+                          borderColor: "secondary.main",
+                        },
+                      }}
                     >
-                      <Grid2>
-                        <Typography variant="body1">{username}</Typography>
-                      </Grid2>
-                      <Grid2>
-                        <IconButton onClick={handleOpenUserMenu} sx={{ p: 0 }}>
-                          <Avatar
-                            alt={username || ""}
-                            src="/static/images/avatar/2.jpg"
-                          />
-                        </IconButton>
-                      </Grid2>
-                    </Grid2>
+                      <Avatar
+                        alt={username || ""}
+                        sx={{
+                          bgcolor: "secondary.main",
+                          width: 36,
+                          height: 36,
+                          fontSize: "1rem",
+                          fontWeight: 600,
+                        }}
+                      >
+                        {username?.[0]?.toUpperCase()}
+                      </Avatar>
+                    </IconButton>
                   </Tooltip>
+
                   <Menu
                     sx={{ mt: "45px" }}
+                    PaperProps={{
+                      sx: {
+                        minWidth: 180,
+                        boxShadow: "0 4px 12px rgba(0, 0, 0, 0.15)",
+                        "& .MuiMenuItem-root": {
+                          typography: "body2",
+                          fontWeight: 500,
+                          py: 1.5,
+                          "&:hover": {
+                            bgcolor: "action.hover",
+                          },
+                        },
+                      },
+                    }}
                     id="menu-appbar"
                     anchorEl={anchorElUser}
                     anchorOrigin={{
@@ -168,20 +238,31 @@ function Navbar() {
                             : handleCloseUserMenu
                         }
                       >
-                        <Typography sx={{ textAlign: "center" }}>
+                        <Typography variant="body2" sx={{ fontWeight: 600 }}>
                           {setting}
                         </Typography>
                       </MenuItem>
                     ))}
                   </Menu>
-                </>
+                </Box>
               ) : (
                 <Button
                   variant="contained"
-                  color="primary"
+                  color="secondary"
                   onClick={handleLogin}
+                  sx={{
+                    borderRadius: 20,
+                    px: 3,
+                    py: 0.8,
+                    fontWeight: 600,
+                    letterSpacing: 0.5,
+                    boxShadow: "none",
+                    "&:hover": {
+                      boxShadow: "0 2px 8px rgba(0, 0, 0, 0.2)",
+                    },
+                  }}
                 >
-                  Login
+                  Sign In
                 </Button>
               )}
             </Box>

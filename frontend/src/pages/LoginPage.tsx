@@ -43,62 +43,126 @@ const LoginPage = () => {
   };
 
   return (
-    <Container>
+    <Container maxWidth="xs">
       <Box
         sx={{
           display: "flex",
           flexDirection: "column",
           justifyContent: "center",
-          alignItems: "center",
-          mt: 6,
+          minHeight: "80vh",
+          py: 8,
         }}
       >
-        <Typography variant="h6">Login to your Account</Typography>
-
-        <Box
+        <Typography
+          variant="h4"
           sx={{
-            display: "flex",
-            border: "1px solid #f5f5f5",
-            flexDirection: "column",
-            p: 2,
-            gap: 2,
-            mt: 2,
-            maxWidth: "400px",
-            borderRadius: "8px",
-            boxShadow: "0px 2px 10px rgba(0,0,0,0.1)",
+            mb: 4,
+            fontWeight: 700,
+            textAlign: "center",
+            color: "text.primary",
+            letterSpacing: 0.5,
           }}
         >
-          <TextField inputRef={emailRef} label="Email" name="email" />
+          Welcome Back
+        </Typography>
+
+        <Box
+          component="form"
+          sx={{
+            display: "flex",
+            flexDirection: "column",
+            gap: 3,
+            p: 4,
+            borderRadius: 4,
+            boxShadow: 3,
+            backgroundColor: "background.paper",
+          }}
+        >
           <TextField
+            fullWidth
+            inputRef={emailRef}
+            label="Email"
+            variant="outlined"
+            InputProps={{
+              sx: { borderRadius: 2 },
+            }}
+            InputLabelProps={{
+              sx: { color: "text.secondary" },
+            }}
+          />
+
+          <TextField
+            fullWidth
             inputRef={passwordRef}
             type="password"
             label="Password"
-            name="password"
+            InputProps={{
+              sx: { borderRadius: 2 },
+            }}
+            InputLabelProps={{
+              sx: { color: "text.secondary" },
+            }}
           />
-          <Button onClick={handleSubmit} variant="contained" color="primary">
-            Login
+
+          <Button
+            fullWidth
+            variant="contained"
+            color="primary"
+            onClick={handleSubmit}
+            sx={{
+              py: 1.5,
+              borderRadius: 2,
+              fontWeight: 600,
+              letterSpacing: 1,
+              textTransform: "uppercase",
+              fontSize: "0.875rem",
+              boxShadow: "none",
+              "&:hover": {
+                boxShadow: "0 4px 12px rgba(25, 118, 210, 0.3)",
+                transform: "translateY(-1px)",
+              },
+              transition: "all 0.2s ease",
+            }}
+          >
+            Sign In
           </Button>
 
-          {/* "Can’t sign in?" text with navigation */}
-          <Typography
-            variant="body1"
-            sx={{
-              cursor: "pointer",
-              textAlign: "center",
-              color: "blue",
-              textDecoration: "underline",
-              "&:hover": { color: "darkblue" },
-            }}
-            onClick={() => navigate("/register")}
-          >
-            Can't sign in?
-          </Typography>
-
           {error && (
-            <Typography variant="body1" color="error">
+            <Typography
+              variant="body2"
+              color="error"
+              sx={{
+                textAlign: "center",
+                fontWeight: 500,
+                px: 2,
+                py: 1,
+                borderRadius: 1,
+                backgroundColor: "error.light + 15",
+              }}
+            >
               {error}
             </Typography>
           )}
+
+          <Typography
+            variant="body2"
+            sx={{
+              textAlign: "center",
+              color: "text.secondary",
+              mt: 1,
+              "& span": {
+                color: "secondary.main",
+                cursor: "pointer",
+                fontWeight: 600,
+                "&:hover": {
+                  textDecoration: "underline",
+                },
+              },
+            }}
+          >
+            New user?{" "}
+            <span onClick={() => navigate("/register")}>Create an account</span>
+          </Typography>
         </Box>
       </Box>
     </Container>
