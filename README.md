@@ -6,7 +6,10 @@
 
 A full-stack e-commerce platform built with the MERN stack (MongoDB, Express, React, Node.js) featuring user authentication, product management, and secure checkout.
 
-![Laptopia Demo](https://via.placeholder.com/800x400.png?text=Laptopia+Demo+Screenshot)
+### Watch demo video below to see Laptopia in action!
+
+[![Laptopia Demo](https://img.youtube.com/vi/tSwDvwmv5j4/0.jpg)](https://youtu.be/tSwDvwmv5j4)
+
 
 ## 🚀 Features
 
@@ -25,7 +28,8 @@ A full-stack e-commerce platform built with the MERN stack (MongoDB, Express, Re
   - Secure payment processing
   - Order confirmation
 - **Order History**
-  - Detailed order tracking
+  -
+ Detailed order tracking
   - Email notifications
 
 ### 🎨 UI Features
