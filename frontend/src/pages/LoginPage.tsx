@@ -8,13 +8,13 @@ const BASE_URL = import.meta.env.VITE_BASE_URL;
 const LoginPage = () => {
   const [error, setError] = useState("");
   const emailRef = useRef<HTMLInputElement>(null);
-  const passwordRef = useRef<HTMLInputElement>(null); // Fixed typo
+  const passwordRef = useRef<HTMLInputElement>(null);
   const { login } = useAuth();
   const navigate = useNavigate();
 
   const handleSubmit = async () => {
     const email = emailRef.current?.value;
-    const password = passwordRef.current?.value; // Fixed typo
+    const password = passwordRef.current?.value; 
 
     if (!email || !password) {
       setError("Invalid data");

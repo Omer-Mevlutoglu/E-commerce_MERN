@@ -11,6 +11,10 @@ export interface Iorder extends Document {
   orderItems: IorderItem[];
   total: number;
   address: string;
+  fullName: string;
+  cvc: string;
+  exp: string;
+  cardNumber: string;
   userId: ObjectId | string;
 }
 
@@ -25,6 +29,11 @@ const orderSchema = new Schema<Iorder>({
   orderItems: [IorderItemSchema],
   total: { type: Number, required: true },
   address: { type: String, required: true },
+  fullName: { type: String, required: true },
+  cvc: { type: String, required: true },
+  exp: { type: String, required: true },
+  cardNumber: { type: String, required: true },
+
   userId: {
     type: mongoose.Schema.Types.ObjectId, // Store reference to a user
     ref: "users", // Refers to the users collection

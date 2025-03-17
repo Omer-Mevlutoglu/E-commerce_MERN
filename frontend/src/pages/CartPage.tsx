@@ -5,6 +5,9 @@ import { useNavigate } from "react-router-dom";
 const CartPage = () => {
   const theme = useTheme();
   const navigate = useNavigate();
+  const handleCheckout = () => {
+    navigate("/checkout");
+  };
   const {
     cartItem,
     totalAmount,
@@ -319,6 +322,7 @@ const CartPage = () => {
                   },
                   transition: "all 0.2s ease",
                 }}
+                onClick={handleCheckout}
               >
                 Proceed to Checkout
               </Button>

@@ -76,8 +76,15 @@ router.delete("/", validateJWT, async (req: ExtenedRequest, res) => {
 router.post("/checkout", validateJWT, async (req: ExtenedRequest, res) => {
   try {
     const userId = req?.user?._id;
-    const { address } = req.body;
-    const response = await checkOut({ userId, address });
+    const { address, fullName, cvc, exp, cardNumber } = req.body;
+    const response = await checkOut({
+      userId,
+      address,
+      fullName,
+      cvc,
+      exp,
+      cardNumber,
+    });
     res.status(response.statusCode).send(response.data);
   } catch (error) {
     res.status(500).send("Something went wrong");

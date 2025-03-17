@@ -1,4 +1,3 @@
-import { ReturnDocument } from "mongodb";
 import { cartModel, Icart, IcartItem } from "../models/cartModel";
 import productModel from "../models/productModel";
 import { IorderItem, orderModel } from "../models/orderModel";
@@ -217,13 +216,24 @@ export const clearCart = async ({ userId }: ClearCart) => {
 interface CheckOut {
   userId: string;
   address: string;
+  fullName: string;
+  cvc: string;
+  exp: string;
+  cardNumber: string;
 }
 
-export const checkOut = async ({ userId, address }: CheckOut) => {
+export const checkOut = async ({
+  userId,
+  address,
+  fullName,
+  cvc,
+  exp,
+  cardNumber,
+}: CheckOut) => {
   const cart = await getActiveCartForUser({ userId });
 
   if (!address) {
-    return { data: "Address mudt be enetered", statusCode: 400 };
+    return { data: "Address must be enetered", statusCode: 400 };
   }
   const orderItems: IorderItem[] = [];
   // Loop on cart items and create order items from it
@@ -248,6 +258,10 @@ export const checkOut = async ({ userId, address }: CheckOut) => {
     orderItems,
     total: cart.totalAmount,
     address,
+    fullName,
+    cvc,
+    exp,
+    cardNumber,
     userId,
   });
 
