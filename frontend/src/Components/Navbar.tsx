@@ -15,6 +15,7 @@ import { Button, Badge } from "@mui/material";
 import { useNavigate } from "react-router-dom";
 import ShoppingCartIcon from "@mui/icons-material/ShoppingCart";
 import { useCart } from "../context/Cart/CartContext";
+
 const settings = ["My Orders", "Logout"];
 
 function Navbar() {
@@ -24,24 +25,20 @@ function Navbar() {
     null
   );
   const navigate = useNavigate();
+
   const handleOpenUserMenu = (event: React.MouseEvent<HTMLElement>) => {
     setAnchorElUser(event.currentTarget);
   };
 
-  const handleCloseUserMenu = () => {
-    setAnchorElUser(null);
-  };
-  const handleLogin = () => {
-    navigate("/login");
-  };
+  const handleCloseUserMenu = () => setAnchorElUser(null);
+  const handleLogin = () => navigate("/login");
   const handleLogout = () => {
     logout();
     navigate("/");
     handleCloseUserMenu();
   };
-  const handleCart = () => {
-    navigate("/cart");
-  };
+  const handleCart = () => navigate("/cart");
+
   return (
     <AppBar
       position="static"
@@ -50,20 +47,26 @@ function Navbar() {
         boxShadow: "none",
         borderBottom: "1px solid",
         borderColor: "divider",
-        backgroundImage: "none",
       }}
     >
       <Container maxWidth="xl">
-        <Toolbar disableGutters sx={{ py: 1 }}>
+        <Toolbar
+          disableGutters
+          sx={{
+            py: { xs: 0.5, md: 1 },
+            px: { xs: 1, sm: 0 },
+          }}
+        >
           <Box
             sx={{
               display: "flex",
               justifyContent: "space-between",
               width: "100%",
               alignItems: "center",
+              gap: { xs: 1, sm: 2 },
             }}
           >
-            {/* Logo Section */}
+            {/* Unified Logo Section */}
             <Box
               sx={{
                 display: "flex",
@@ -75,9 +78,9 @@ function Navbar() {
             >
               <AdbIcon
                 sx={{
-                  fontSize: 32,
+                  fontSize: { xs: 26, md: 32 },
                   color: "secondary.main",
-                  display: { xs: "none", md: "flex" },
+                  display: { xs: "none", sm: "flex" },
                 }}
               />
               <Typography
@@ -85,41 +88,12 @@ function Navbar() {
                 noWrap
                 sx={{
                   fontWeight: 700,
-                  letterSpacing: 1.2,
+                  letterSpacing: { xs: 0.5, md: 1.2 },
                   color: "common.white",
+                  fontSize: { xs: "1.1rem", sm: "1.25rem", md: "1.5rem" },
                   transition: "color 0.3s ease",
-                  "&:hover": {
-                    color: "secondary.main",
-                  },
-                }}
-              >
-                LAPTOPIA
-              </Typography>
-            </Box>
-
-            {/* Mobile Logo */}
-            <Box
-              sx={{
-                display: { xs: "flex", md: "none" },
-                alignItems: "center",
-                gap: 1,
-              }}
-              onClick={() => navigate("/")}
-            >
-              <AdbIcon
-                sx={{
-                  fontSize: 28,
-                  color: "secondary.main",
-                  display: { xs: "flex", md: "none" },
-                }}
-              />
-              <Typography
-                variant="h6"
-                noWrap
-                sx={{
-                  fontWeight: 700,
-                  color: "common.white",
-                  fontSize: "1.25rem",
+                  "&:hover": { color: "secondary.main" },
+                  ml: { xs: 0, sm: 1 },
                 }}
               >
                 LAPTOPIA
@@ -131,7 +105,7 @@ function Navbar() {
               sx={{
                 display: "flex",
                 alignItems: "center",
-                gap: 3,
+                gap: { xs: 1, sm: 2, md: 3 },
                 color: "common.white",
               }}
             >
@@ -140,9 +114,8 @@ function Navbar() {
                 aria-label="cart"
                 onClick={handleCart}
                 sx={{
-                  "&:hover": {
-                    backgroundColor: "rgba(255, 255, 255, 0.08)",
-                  },
+                  p: { xs: "6px", md: "8px" },
+                  "&:hover": { backgroundColor: "rgba(255, 255, 255, 0.08)" },
                 }}
               >
                 <Badge
@@ -150,20 +123,18 @@ function Navbar() {
                   color="secondary"
                   sx={{
                     "& .MuiBadge-badge": {
-                      right: -4,
-                      top: 8,
+                      right: { xs: -2, md: -4 },
+                      top: { xs: 4, md: 8 },
                       fontWeight: 600,
+                      fontSize: { xs: "0.7rem", md: "0.8rem" },
                     },
                   }}
                 >
                   <ShoppingCartIcon
                     sx={{
-                      fontSize: 28,
+                      fontSize: { xs: 24, md: 28 },
                       color: "common.white",
-                      transition: "color 0.2s ease",
-                      "&:hover": {
-                        color: "secondary.main",
-                      },
+                      "&:hover": { color: "secondary.main" },
                     }}
                   />
                 </Badge>
@@ -171,7 +142,7 @@ function Navbar() {
 
               {/* User Section */}
               {isAuthanticated ? (
-                <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+                <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
                   <Tooltip title="Account settings">
                     <IconButton
                       onClick={handleOpenUserMenu}
@@ -179,19 +150,16 @@ function Navbar() {
                         p: 0.5,
                         border: "2px solid",
                         borderColor: "common.white",
-                        "&:hover": {
-                          borderColor: "secondary.main",
-                        },
+                        "&:hover": { borderColor: "secondary.main" },
                       }}
                     >
                       <Avatar
                         alt={username || ""}
                         sx={{
                           bgcolor: "secondary.main",
-                          width: 36,
-                          height: 36,
-                          fontSize: "1rem",
-                          fontWeight: 600,
+                          width: { xs: 32, md: 36 },
+                          height: { xs: 32, md: 36 },
+                          fontSize: { xs: "0.9rem", md: "1rem" },
                         }}
                       >
                         {username?.[0]?.toUpperCase()}
@@ -203,29 +171,20 @@ function Navbar() {
                     sx={{ mt: "45px" }}
                     PaperProps={{
                       sx: {
-                        minWidth: 180,
+                        minWidth: 160,
                         boxShadow: "0 4px 12px rgba(0, 0, 0, 0.15)",
                         "& .MuiMenuItem-root": {
                           typography: "body2",
                           fontWeight: 500,
-                          py: 1.5,
-                          "&:hover": {
-                            bgcolor: "action.hover",
-                          },
+                          py: 1.2,
+                          fontSize: { xs: "0.9rem", md: "1rem" },
                         },
                       },
                     }}
-                    id="menu-appbar"
                     anchorEl={anchorElUser}
-                    anchorOrigin={{
-                      vertical: "top",
-                      horizontal: "right",
-                    }}
+                    anchorOrigin={{ vertical: "top", horizontal: "right" }}
                     keepMounted
-                    transformOrigin={{
-                      vertical: "top",
-                      horizontal: "right",
-                    }}
+                    transformOrigin={{ vertical: "top", horizontal: "right" }}
                     open={Boolean(anchorElUser)}
                     onClose={handleCloseUserMenu}
                   >
@@ -252,14 +211,12 @@ function Navbar() {
                   onClick={handleLogin}
                   sx={{
                     borderRadius: 20,
-                    px: 3,
-                    py: 0.8,
+                    px: { xs: 2, md: 3 },
+                    py: { xs: 0.5, md: 0.8 },
+                    fontSize: { xs: "0.8rem", md: "0.9rem" },
                     fontWeight: 600,
                     letterSpacing: 0.5,
-                    boxShadow: "none",
-                    "&:hover": {
-                      boxShadow: "0 2px 8px rgba(0, 0, 0, 0.2)",
-                    },
+                    minWidth: { xs: "fit-content", md: "auto" },
                   }}
                 >
                   Sign In
@@ -272,4 +229,5 @@ function Navbar() {
     </AppBar>
   );
 }
+
 export default Navbar;

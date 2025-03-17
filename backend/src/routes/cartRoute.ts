@@ -63,7 +63,7 @@ router.delete(
   }
 );
 
-router.delete("/items", validateJWT, async (req: ExtenedRequest, res) => {
+router.delete("/", validateJWT, async (req: ExtenedRequest, res) => {
   try {
     const userId = req?.user?._id;
     const response = await clearCart({ userId });

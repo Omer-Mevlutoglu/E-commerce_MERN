@@ -17,49 +17,39 @@ const CartProvider: FC<PropsWithChildren> = ({ children }) => {
     _event?: React.SyntheticEvent | Event,
     reason?: string
   ) => {
-    if (reason === "clickaway") {
-      return;
-    }
+    if (reason === "clickaway") return;
     setOpen(false);
   };
 
-  // Expose a function to trigger an error message via Snackbar
+  // Helper function to map raw cart items to our CartItem type
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const mapCartItems = (items: any[]): CartItem[] =>
+    items.map(({ product, quantity }) => ({
+      productId: product._id,
+      image: product.image,
+      title: product.title,
+      quantity,
+      unitPrice: product.price,
+      stock: product.stock,
+    }));
+
   const showError = (message: string) => {
     setError(message);
     setOpen(true);
   };
 
   useEffect(() => {
-    if (!token) {
-      return;
-    }
+    if (!token) return;
 
     const fetchCart = async () => {
       try {
         const response = await fetch(`${BASE_URL}/cart`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
+          headers: { Authorization: `Bearer ${token}` },
         });
-
-        if (!response.ok) {
+        if (!response.ok)
           throw new Error("Failed to get user cart. Try again.");
-        }
-
         const data = await response.json();
-        const cartItemsMapped = data.items.map(
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          ({ product, quantity }: { product: any; quantity: number }) => ({
-            productId: product._id,
-            image: product.image,
-            title: product.title,
-            quantity,
-            unitPrice: product.price,
-            stock: product.stock,
-          })
-        );
-
-        setCartItem([...cartItemsMapped]);
+        setCartItem(mapCartItems(data.items));
         setTotalAmount(data.totalAmount);
       } catch {
         showError("Failed to get data");
@@ -79,36 +69,20 @@ const CartProvider: FC<PropsWithChildren> = ({ children }) => {
         },
         body: JSON.stringify({ productId, quantity: 1 }),
       });
-
       if (!response.ok) {
         showError(
           "Item already exists in cart or an error has occurred. Check your cart."
         );
         return;
       }
-
       const cart = await response.json();
       if (!cart) {
         showError("No cart for this user");
         return;
       }
-
-      const cartItemsMapped = cart.items.map(
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        ({ product, quantity }: { product: any; quantity: number }) => ({
-          productId: product._id,
-          image: product.image,
-          title: product.title,
-          quantity,
-          unitPrice: product.price,
-          stock: product.stock,
-        })
-      );
-
-      setCartItem([...cartItemsMapped]);
+      setCartItem(mapCartItems(cart.items));
       setTotalAmount(cart.totalAmount);
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    } catch (error) {
+    } catch {
       showError("Item already exists in cart");
     }
   };
@@ -127,34 +101,18 @@ const CartProvider: FC<PropsWithChildren> = ({ children }) => {
         },
         body: JSON.stringify({ productId, quantity, stock }),
       });
-
       if (!response.ok) {
         showError("Server error");
         return;
       }
-
       const cart = await response.json();
       if (!cart) {
         showError("No cart for this user");
         return;
       }
-
-      const cartItemsMapped = cart.items.map(
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        ({ product, quantity }: { product: any; quantity: number }) => ({
-          productId: product._id,
-          image: product.image,
-          title: product.title,
-          quantity,
-          unitPrice: product.price,
-          stock: product.stock,
-        })
-      );
-
-      setCartItem([...cartItemsMapped]);
+      setCartItem(mapCartItems(cart.items));
       setTotalAmount(cart.totalAmount);
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    } catch (error) {
+    } catch {
       showError("Can't change the quantity");
     }
   };
@@ -163,39 +121,43 @@ const CartProvider: FC<PropsWithChildren> = ({ children }) => {
     try {
       const response = await fetch(`${BASE_URL}/cart/items/${productId}`, {
         method: "DELETE",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+        headers: { Authorization: `Bearer ${token}` },
       });
-
       if (!response.ok) {
         showError("Failed to delete the item.");
         return;
       }
-
       const cart = await response.json();
       if (!cart) {
         showError("No cart data available.");
         return;
       }
-
-      const cartItemsMapped = cart.items.map(
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        ({ product, quantity }: { product: any; quantity: number }) => ({
-          productId: product._id,
-          image: product.image,
-          title: product.title,
-          quantity,
-          unitPrice: product.price,
-          stock: product.stock,
-        })
-      );
-
-      setCartItem([...cartItemsMapped]);
+      setCartItem(mapCartItems(cart.items));
       setTotalAmount(cart.totalAmount);
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    } catch (error) {
+    } catch {
       showError("An error occurred while deleting the item.");
+    }
+  };
+
+  const ClearCart = async () => {
+    try {
+      const response = await fetch(`${BASE_URL}/cart`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!response.ok) {
+        showError("Failed to clear cart.");
+        return;
+      }
+      const cart = await response.json();
+      if (!cart) {
+        showError("No cart data available.");
+        return;
+      }
+      setCartItem([]);
+      setTotalAmount(0);
+    } catch {
+      showError("An error occurred while clearing the cart.");
     }
   };
 
@@ -208,12 +170,12 @@ const CartProvider: FC<PropsWithChildren> = ({ children }) => {
           addItemToCart,
           updateItemInCart,
           DeleteItemInCart,
+          ClearCart,
           showError,
         }}
       >
         {children}
       </CartContext.Provider>
-
       <Snackbar
         open={open}
         autoHideDuration={3000}

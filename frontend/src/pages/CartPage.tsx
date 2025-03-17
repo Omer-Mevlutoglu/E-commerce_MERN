@@ -11,6 +11,7 @@ const CartPage = () => {
     updateItemInCart,
     showError,
     DeleteItemInCart,
+    ClearCart,
   } = useCart();
 
   const handleQuantity = (
@@ -82,8 +83,9 @@ const CartPage = () => {
               key={item.productId}
               sx={{
                 display: "flex",
+                flexDirection: { xs: "column", sm: "row" },
                 alignItems: "center",
-                p: 3,
+                p: { xs: 2, sm: 3 },
                 backgroundColor: "background.paper",
                 borderRadius: 4,
                 gap: 3,
@@ -98,8 +100,8 @@ const CartPage = () => {
               {/* Product Image */}
               <Box
                 sx={{
-                  width: 120,
-                  height: 120,
+                  width: { xs: "100%", sm: 120 },
+                  height: { xs: 200, sm: 120 },
                   flexShrink: 0,
                   overflow: "hidden",
                   borderRadius: 3,
@@ -127,8 +129,10 @@ const CartPage = () => {
                 />
               </Box>
 
-              {/* Product Details */}
-              <Box sx={{ flexGrow: 1 }}>
+              {/* Product Details and Quantity Controls */}
+              <Box
+                sx={{ flexGrow: 1, textAlign: { xs: "center", sm: "left" } }}
+              >
                 <Typography
                   variant="h6"
                   sx={{
@@ -143,9 +147,11 @@ const CartPage = () => {
                 <Box
                   sx={{
                     display: "flex",
+                    flexDirection: { xs: "column", sm: "row" },
                     alignItems: "center",
                     gap: 2,
                     mt: 2,
+                    justifyContent: { xs: "center", sm: "flex-start" },
                   }}
                 >
                   <Box
@@ -227,9 +233,10 @@ const CartPage = () => {
                     onClick={() => removeItemInCart(item.productId)}
                     sx={{
                       fontWeight: 600,
-                      ml: 2,
+                      ml: { xs: 0, sm: 2 },
+                      mt: { xs: 1, sm: 0 },
                       "&:hover": {
-                        backgroundColor: "error.light + 15",
+                        backgroundColor: "error.light",
                       },
                     }}
                   >
@@ -239,7 +246,7 @@ const CartPage = () => {
               </Box>
 
               {/* Price Calculation */}
-              <Box sx={{ textAlign: "right" }}>
+              <Box sx={{ textAlign: { xs: "center", sm: "right" } }}>
                 <Typography
                   variant="subtitle1"
                   sx={{
@@ -263,10 +270,11 @@ const CartPage = () => {
             </Box>
           ))}
 
-          {/* Checkout Section */}
+          {/* Checkout and Clear Cart Section */}
           <Box
             sx={{
               display: "flex",
+              flexDirection: { xs: "column", sm: "row" },
               justifyContent: "space-between",
               alignItems: "center",
               p: 3,
@@ -274,6 +282,7 @@ const CartPage = () => {
               borderRadius: 4,
               boxShadow: 1,
               mt: 2,
+              gap: { xs: 2, sm: 0 },
             }}
           >
             <Typography
@@ -285,27 +294,57 @@ const CartPage = () => {
             >
               Total: ${totalAmount.toFixed(2)}
             </Typography>
-            <Button
-              variant="contained"
-              color="primary"
-              size="large"
+            <Box
               sx={{
-                px: 4,
-                py: 1.5,
-                borderRadius: 2,
-                fontWeight: 600,
-                letterSpacing: 0.5,
-                textTransform: "uppercase",
-                boxShadow: "none",
-                "&:hover": {
-                  boxShadow: "0 4px 12px rgba(25, 118, 210, 0.3)",
-                  transform: "translateY(-1px)",
-                },
-                transition: "all 0.2s ease",
+                display: "flex",
+                flexDirection: { xs: "column", sm: "row" },
+                gap: 2,
               }}
             >
-              Proceed to Checkout
-            </Button>
+              <Button
+                variant="contained"
+                color="primary"
+                size="large"
+                sx={{
+                  px: 4,
+                  py: 1.5,
+                  borderRadius: 2,
+                  fontWeight: 600,
+                  letterSpacing: 0.5,
+                  textTransform: "uppercase",
+                  boxShadow: "none",
+                  "&:hover": {
+                    boxShadow: "0 4px 12px rgba(25, 118, 210, 0.3)",
+                    transform: "translateY(-1px)",
+                  },
+                  transition: "all 0.2s ease",
+                }}
+              >
+                Proceed to Checkout
+              </Button>
+              <Button
+                variant="contained"
+                color="secondary"
+                size="large"
+                sx={{
+                  px: 4,
+                  py: 1.5,
+                  borderRadius: 2,
+                  fontWeight: 600,
+                  letterSpacing: 0.5,
+                  textTransform: "uppercase",
+                  boxShadow: "none",
+                  "&:hover": {
+                    boxShadow: "0 4px 12px rgba(156, 39, 176, 0.3)",
+                    transform: "translateY(-1px)",
+                  },
+                  transition: "all 0.2s ease",
+                }}
+                onClick={ClearCart}
+              >
+                Clear Cart
+              </Button>
+            </Box>
           </Box>
         </Box>
       )}
