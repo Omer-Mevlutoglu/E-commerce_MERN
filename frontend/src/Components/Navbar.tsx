@@ -21,9 +21,7 @@ const settings = ["My Orders", "Logout"];
 function Navbar() {
   const { cartItem } = useCart();
   const { username, isAuthanticated, logout } = useAuth();
-  const [anchorElUser, setAnchorElUser] = React.useState<null | HTMLElement>(
-    null
-  );
+  const [anchorElUser, setAnchorElUser] = React.useState<null | HTMLElement>(null);
   const navigate = useNavigate();
 
   const handleOpenUserMenu = (event: React.MouseEvent<HTMLElement>) => {
@@ -31,13 +29,22 @@ function Navbar() {
   };
 
   const handleCloseUserMenu = () => setAnchorElUser(null);
+
   const handleLogin = () => navigate("/login");
+
   const handleLogout = () => {
     logout();
     navigate("/");
     handleCloseUserMenu();
   };
+
   const handleCart = () => navigate("/cart");
+
+  // Define a dedicated function for My Orders
+  const handleMyOrders = () => {
+    navigate("/my-orders");
+    handleCloseUserMenu();
+  };
 
   return (
     <AppBar
@@ -194,6 +201,8 @@ function Navbar() {
                         onClick={
                           setting === "Logout"
                             ? handleLogout
+                            : setting === "My Orders"
+                            ? handleMyOrders
                             : handleCloseUserMenu
                         }
                       >

@@ -9,6 +9,7 @@ import ProtectedRoute from "./Components/ProtectedRoute";
 import CartProvider from "./context/Cart/CartProvider";
 import CheckoutPage from "./pages/CheckoutPage";
 import OrderConfirmationPage from "./pages/OrderConfirmationPage";
+import MyOrdersPage from "./pages/MyOrdersPage";
 
 function App() {
   return (
@@ -27,6 +28,7 @@ function App() {
                 path="/order-confirmation"
                 element={<OrderConfirmationPage />}
               />
+              <Route path="/my-orders" element={<MyOrdersPage />} />
             </Route>
           </Routes>
         </BrowserRouter>

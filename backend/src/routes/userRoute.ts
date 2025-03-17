@@ -1,5 +1,7 @@
-import express, { response } from "express";
-import { login, register } from "../services/userServices";
+import express, { request, response } from "express";
+import { getMyOrders, login, register } from "../services/userServices";
+import { ExtenedRequest } from "../types/extendedRequest";
+import validateJWT from "../middlewares/validateJWT";
 
 const router = express.Router();
 
@@ -22,5 +24,21 @@ router.post("/login", async (request, response) => {
     response.status(500).send("Something went wrong");
   }
 });
+
+router.get(
+  "/my-orders",
+  validateJWT,
+  async (request: ExtenedRequest, response) => {
+    try {
+      const userId = request.user._id;
+      const { statusCode, data } = await getMyOrders({
+        userId,
+      });
+      response.status(statusCode).send(data);
+    } catch (error) {
+      response.status(500).send("Something went wrong");
+    }
+  }
+);
 
 export default router;
