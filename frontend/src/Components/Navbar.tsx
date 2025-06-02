@@ -228,7 +228,7 @@ function Navbar() {
                     minWidth: { xs: "fit-content", md: "auto" },
                   }}
                 >
-                  Sign In
+                  Sign Insds
                 </Button>
               )}
             </Box>
