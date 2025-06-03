@@ -1,168 +1,239 @@
-# Laptopia - MERN Stack E-Commerce
+# Laptopia – MERN Stack E-Commerce
 
-[![React](https://img.shields.io/badge/React-18.2.0-blue)](https://reactjs.org/)
-[![Node.js](https://img.shields.io/badge/Node.js-18.17.1-green)](https://nodejs.org/)
-[![MongoDB](https://img.shields.io/badge/MongoDB-7.0-green)](https://www.mongodb.com/)
+[![React](https://img.shields.io/badge/React-18.2.0-blue)](https://reactjs.org/)  
+[![Node.js](https://img.shields.io/badge/Node.js-18.17.1-green)](https://nodejs.org/)  
+[![MongoDB](https://img.shields.io/badge/MongoDB-7.0-green)](https://www.mongodb.com/)  
 
-A full-stack e-commerce platform built with the MERN stack (MongoDB, Express, React, Node.js) featuring user authentication, product management, and secure checkout.
+A full-stack e-commerce platform built with the MERN stack—MongoDB (local), Express, React, and Node.js—featuring **role-based access** (user vs. admin), product browsing, cart management, secure checkout, and an admin dashboard for inventory and order control.
 
-### Watch demo video below to see Laptopia in action!
+### Watch the demo video below to see Laptopia in action!
 
 [![Laptopia Demo](https://img.youtube.com/vi/tSwDvwmv5j4/0.jpg)](https://youtu.be/tSwDvwmv5j4)
 
+---
 
 ## 🚀 Features
 
-### ✨ Core Functionality
-- **User Authentication**
-  - JWT-based secure registration/login
-  - Protected routes & session management
-- **Product Management**
-  - Browse products with images/details
-  - Real-time stock updates
-- **Shopping Cart**
-  - Add/remove items
-  - Quantity adjustments
-  - Cart persistence
-- **Checkout System**
-  - Secure payment processing
-  - Order confirmation
-- **Order History**
-  -
- Detailed order tracking
-  - Email notifications
+### User (Role: “user”)
+- **Browse Products**  
+  View all available products with images, price, and stock.
+- **Shopping Cart**  
+  Add/remove items, adjust quantities (validated against stock), and persist cart per user.
+- **Checkout & Order History**  
+  Fill in shipping and payment details to place orders; view past orders with item details.
+- **Protected Routes**  
+  Cart, Checkout, and Order History pages require login; “Add to Cart” disabled for guests and admins.
 
-### 🎨 UI Features
-- Responsive Material UI design
-- Interactive product cards
-- Real-time cart updates
-- Clean dashboard interface
+### Admin (Role: “admin”)
+- **Product Management**  
+  Add new products (title, image URL, price, stock); edit existing products; delete products.
+- **Order Management**  
+  View all confirmed orders across customers, including customer info, shipping address, and ordered items.
+- **Role-Based Navigation**  
+  Admins see “Manage Products” and “View Orders” links; user-only features (cart, checkout) are hidden.
+
+### Common
+- **Authentication & Authorization**  
+  JWT-based registration/login with bcrypt password hashing.  
+  Token payload includes `role` (“user” or “admin”), enforced on both frontend (route guards) and backend (middleware).
+- **Responsive UI**  
+  Material UI for a polished, mobile-friendly design.
+- **Real-Time Updates**  
+  Cart badge, product stock, and form validations occur without full-page reloads.
+- **Error Handling**  
+  Frontend snackbars for API errors; backend returns clear status codes and messages.
+
+---
 
 ## 🛠 Tech Stack
 
 ### Frontend
-| Technology          | Description                           |
-|---------------------|---------------------------------------|
-| React               | Frontend library                      |
-| TypeScript          | Static typing                         |
-| Material UI         | UI components & styling              |
-| React Router        | Navigation & routing                  |
-| Vite                | Build tool & dev server               |
+| Technology    | Description                        |
+|---------------|------------------------------------|
+| React         | Frontend library                   |
+| TypeScript    | Static typing                      |
+| Material UI   | UI components & styling            |
+| React Router  | Client-side routing                |
+| Vite          | Build tool & development server    |
 
 ### Backend
-| Technology          | Description                           |
-|---------------------|---------------------------------------|
-| Node.js              | JavaScript runtime                   |
-| Express             | API framework                         |
-| MongoDB              | NoSQL database                       |
-| Mongoose             | MongoDB object modeling              |
-| JWT                 | Authentication tokens                |
-| Bcrypt              | Password hashing                     |
+| Technology    | Description                        |
+|---------------|------------------------------------|
+| Node.js       | JavaScript runtime                 |
+| Express       | API framework                      |
+| MongoDB       | Local NoSQL database               |
+| Mongoose      | MongoDB object modeling            |
+| JSON Web Token| Authentication & role-based tokens |
+| Bcrypt        | Password hashing                   |
 
-## ⚙️ Installation
+---
+
+## ⚙️ Installation & Setup
 
 ### Prerequisites
-- Node.js 18+
-- MongoDB Atlas account
+- Node.js v18+  
+- MongoDB (installed & running locally on port 27017)  
 - Git
 
-### Backend Setup
-```bash
-git clone https://github.com/yourusername/laptopia.git
-cd laptopia/backend
+---
 
-# Install dependencies
-npm install
+1. **Clone the Repository**  
+   ```bash
+   git clone https://github.com/yourusername/laptopia.git
+   cd laptopia
 
-# Configure environment
-echo "DATABASE_URL=mongodb+srv://<user>:<password>@cluster.mongodb.net/laptopia
-JWT_SECRET=your_jwt_secret
-PORT=3001" > .env
+2. **Backend Setup**
 
-# Start server
-npm run dev
+   ```bash
+   cd backend
+   npm install
+   ```
 
-###Frontend Setup
-cd ../frontend
+   Create `.env` with:
 
-# Install dependencies
-npm install
+   ```
+   DATABASE_URL=mongodb://localhost:27017/laptopia
+   JWT_SECRET=your_jwt_secret
+   PORT=3001
+   ```
 
-# Configure environment
-echo "VITE_BASE_URL=http://localhost:3001" > .env
+   Start the backend:
 
-# Start development server
-npm run dev
-````
-### Frontend Setup
-```bash
-git clone https://github.com/yourusername/laptopia.git
-cd laptopia/backend
-
-# Install dependencies
-cd ../frontend
-
-# Install dependencies
-npm install
-
-# Configure environment
-echo "VITE_BASE_URL=http://localhost:3001" > .env
-
-# Start development server
-npm run dev
-````
-## Usage
-
-### Starting the Application
-
-1. **Start the Backend Server:**  
-   Open a terminal, navigate to the `backend` folder, and run:
    ```bash
    npm run dev
    ```
-   This starts the backend server on port **3001** and connects to your MongoDB Atlas database.
 
-2. **Start the Frontend Server:**  
-   Open another terminal, navigate to the `frontend` folder, and run:
+   * Connects to local MongoDB, seeds sample products if none exist, and listens on [http://localhost:3001](http://localhost:3001).
+
+3. **Frontend Setup**
+
+   ```bash
+   cd ../frontend
+   npm install
+   ```
+
+   Create `.env` with:
+
+   ```
+   VITE_BASE_URL=http://localhost:3001
+   ```
+
+   Start the frontend:
+
    ```bash
    npm run dev
    ```
-   By default, the frontend runs on port **5173**.  
-   To expose the frontend on your local network (for mobile testing), run:
-   ```bash
-   vite --host
-   ```
-   Then, open your browser (or mobile browser) and navigate to:
-   ```
-   http://your_machine_ip:5173
-   ```
 
-### Using the Application
+   * Runs on [http://localhost:5173](http://localhost:5173) by default. For network testing: `vite --host`.
 
-- **Browse Products:**  
-  The homepage displays available products. Click on any product card to view detailed information.
+---
 
-- **User Registration & Login:**  
-  - **Register:**  
-    Click on the "Create Account" link on the login page and fill out the registration form to create a new account.  
-  - **Log In:**  
-    Use the login form to sign in with your registered credentials. After logging in, you'll be redirected to the homepage.
+## 🔑 Usage
 
-- **Shopping Cart:**  
-  - **Adding Products:**  
-    Click the **"Add to Cart"** button on a product card to add an item to your cart.  
-  - **Viewing & Managing the Cart:**  
-    Click the cart icon in the navbar to view your cart. Here, you can update item quantities, remove individual items, or clear the entire cart.
+### 1. User Flow
 
-- **Checkout Process:**  
-  - **Proceed to Checkout:**  
-    From the Cart page, click the **"Proceed to Checkout"** button to enter the checkout process.  
-  - **Complete Payment:**  
-    Fill in your shipping address and payment details (Full Name, Card Number, Expiration Date, CVC) on the Checkout page.  
-  - **Place Order:**  
-    Click the **"Place Order"** button to complete your purchase. Upon successful checkout, you will be redirected to the Order Confirmation page.
+1. **Home & Browse**
 
-- **Order History:**  
-  Access the **"My Orders"** page via the dropdown in the navbar to view your past orders and order details.
+   * Visit `http://localhost:5173/` to see all products (if an admin is logged in, they are redirected to the admin dashboard).
+2. **Register & Login**
 
+   * Click “Sign In” → “Create Account” to register (defaults to role “user”).
+   * After login, you can add products to the cart.
+3. **Shopping Cart**
 
+   * Click **“Add to Cart”** on a product (disabled for guests/admins).
+   * Click the cart icon to view/update quantities, remove items, or clear the cart.
+4. **Checkout**
+
+   * From the Cart page, click **“Proceed to Checkout”**, fill in shipping and payment details (mocked), and place the order.
+   * On success, see the Order Confirmation page; cart is cleared.
+5. **Order History**
+
+   * Click your avatar → “My Orders” to view past orders with item details.
+
+### 2. Admin Flow
+
+1. **Create/Identify Admin**
+
+   * Register a normal user, then in your local MongoDB (Compass or `mongosh`), update that user’s `role` field to `"admin"`.
+   * Or directly insert an admin document:
+
+     ```js
+     db.users.insertOne({
+       firstName: "Alice",
+       lastName: "Admin",
+       email: "alice.admin@example.com",
+       password: "<bcrypt‐hash>",
+       role: "admin"
+     });
+     ```
+2. **Login & Navigation**
+
+   * Log in with an admin account; navbar shows:
+
+     * **Manage Products** → `/admin/products/list`
+     * **View Orders**  → `/admin/orders`
+     * **Logout**
+   * User-only links (cart, “My Orders”) are hidden.
+3. **Manage Products** (`/admin/products/list`)
+
+   * See all products with title, image, price, and stock.
+   * **Edit**: Update via `/admin/products/edit/:productId`.
+   * **Delete**: Remove a product.
+   * **Add Product**: Go to `/admin/products/add`, fill Title, Image URL, Price, Stock, and submit.
+4. **View All Orders** (`/admin/orders`)
+
+   * See every confirmed order with:
+
+     * Order ID, customer name & email, shipping address, total amount
+     * List of ordered items (thumbnail, title, quantity, unit price)
+
+---
+
+## 📚 API Overview
+
+### Public
+
+* **GET /product**
+  List all products (title, image, price, stock).
+
+### Authentication
+
+* **POST /users/register**
+  Request: `{ firstName, lastName, email, password }`
+  Response: JWT token (role defaults to “user”).
+* **POST /users/login**
+  Request: `{ email, password }`
+  Response: JWT token (contains `role: "user"` or `"admin"`).
+
+### User-Only (Authorization: Bearer `<token>` with `role === "user"`)
+
+* **GET /cart** – get active cart (populates products)
+* **POST /cart/items** – add item `{ productId, quantity }`
+* **PUT /cart/items** – update quantity `{ productId, quantity }`
+* **DELETE /cart/items/\:productId** – remove a product from cart
+* **DELETE /cart** – clear cart
+* **POST /cart/checkout** – checkout `{ fullName, address, cardNumber, exp, cvc }`
+* **GET /users/my-orders** – list orders for logged-in user
+
+### Admin-Only (Authorization: Bearer `<token>` with `role === "admin"`)
+
+* **POST /admin/products** – create `{ title, image, price, stock }`
+* **PUT /admin/products/\:productId** – update product
+* **DELETE /admin/products/\:productId** – delete product
+* **GET /admin/orders** – list all confirmed orders (populated user details)
+
+---
+
+## 📥 Development Tips
+
+* **Seeded Data**
+  On server start, if no products exist, a set of sample laptops is inserted automatically.
+* **Creating an Admin**
+
+  * Register a normal user, then in MongoDB (Compass or `mongosh`), set `role: "admin"` for that user.
+  * Now log in as that user; you’ll see admin links.
+* **Testing Auth**
+  Use a REST client (e.g., Thunder Client) to send requests with `Authorization: Bearer <JWT>` and verify that user endpoints (cart, checkout) reject admin tokens and vice versa.
+
+---
