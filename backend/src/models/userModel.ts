@@ -5,6 +5,7 @@ export interface IUser extends Document {
   lastName: string;
   email: string;
   password: string;
+  role: "user" | "admin";
 }
 
 // Creating the Schema that the document fields will follow to be stored in the database
@@ -12,8 +13,9 @@ export interface IUser extends Document {
 const userSchema = new Schema<IUser>({
   firstName: { type: String, required: true },
   lastName: { type: String, required: true },
-  email: { type: String, required: true },
+  email: { type: String, required: true, unique: true },
   password: { type: String, required: true },
+  role: { type: String, enum: ["user", "admin"], default: "user" },
 });
 
 // Registers a model for the user collection.

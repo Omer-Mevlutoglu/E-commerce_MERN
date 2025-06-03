@@ -17,7 +17,7 @@ interface Props {
 
 export default function ProductCard({ _id, title, image, price }: Props) {
   const { addItemToCart } = useCart();
-  const { isAuthanticated } = useAuth();
+  const { isAuthenticated } = useAuth();
 
   const cardStyles: SxProps<Theme> = {
     position: "relative",
@@ -92,7 +92,7 @@ export default function ProductCard({ _id, title, image, price }: Props) {
 
       <CardActions sx={{ px: 2.5, pb: 2.5 }}>
         <Tooltip
-          title={!isAuthanticated ? "Please login to add items to cart" : ""}
+          title={!isAuthenticated ? "Please login to add items to cart" : ""}
           placement="top"
           arrow
         >
@@ -102,7 +102,7 @@ export default function ProductCard({ _id, title, image, price }: Props) {
               variant="contained"
               color="primary"
               onClick={() => addItemToCart(_id)}
-              disabled={!isAuthanticated}
+              disabled={!isAuthenticated}
               sx={{
                 py: 1.2,
                 borderRadius: 2,
@@ -123,7 +123,7 @@ export default function ProductCard({ _id, title, image, price }: Props) {
                 transition: "all 0.2s ease",
               }}
             >
-              {isAuthanticated ? "Add to Cart" : "Login to Purchase"}
+              {isAuthenticated ? "Add to Cart" : "Login to Purchase"}
             </Button>
           </span>
         </Tooltip>

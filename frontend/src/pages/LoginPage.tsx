@@ -14,7 +14,7 @@ const LoginPage = () => {
 
   const handleSubmit = async () => {
     const email = emailRef.current?.value;
-    const password = passwordRef.current?.value; 
+    const password = passwordRef.current?.value;
 
     if (!email || !password) {
       setError("Invalid data");

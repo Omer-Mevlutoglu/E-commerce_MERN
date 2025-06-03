@@ -1,4 +1,4 @@
-import express, { request, response } from "express";
+import express from "express";
 import { getMyOrders, login, register } from "../services/userServices";
 import { ExtenedRequest } from "../types/extendedRequest";
 import validateJWT from "../middlewares/validateJWT";

@@ -6,7 +6,8 @@ import userRoute from "./routes/userRoute";
 import { seedIntialProducts } from "./services/productService";
 import productRoute from "./routes/productRoute";
 import cartRoute from "./routes/cartRoute";
-
+import adminProductRoute from "./routes/adminProductRoute";
+import adminOrderRoute from "./routes/adminOrderRoute";
 dotenv.config();
 
 const app = express();
@@ -28,7 +29,8 @@ seedIntialProducts();
 app.use("/users", userRoute);
 app.use("/product", productRoute);
 app.use("/cart", cartRoute);
-
+app.use("/admin/products", adminProductRoute);
+app.use("/admin/orders", adminOrderRoute);
 app.listen(port, () => {
   console.log(`Server is running on ${port}`);
 });

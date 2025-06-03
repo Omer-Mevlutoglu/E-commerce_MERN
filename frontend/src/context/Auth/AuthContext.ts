@@ -1,10 +1,13 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+// context/Auth/AuthContext.tsx
 import { createContext, useContext } from "react";
 
-interface AuthContextType {
+export interface AuthContextType {
   username: string | null;
   token: string | null;
-  isAuthanticated: boolean;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  userRole: "user" | "admin" | null;   // <— new
+  isAuthenticated: boolean;
+  isAdmin: boolean;                    // <— new
   myOrders: any[];
   login: (username: string, token: string) => void;
   logout: () => void;
@@ -14,7 +17,9 @@ interface AuthContextType {
 export const AuthContext = createContext<AuthContextType>({
   username: null,
   token: null,
-  isAuthanticated: false,
+  userRole: null,
+  isAuthenticated: false,
+  isAdmin: false,
   myOrders: [],
   login: () => {},
   logout: () => {},

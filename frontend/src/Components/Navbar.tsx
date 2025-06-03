@@ -20,8 +20,10 @@ const settings = ["My Orders", "Logout"];
 
 function Navbar() {
   const { cartItem } = useCart();
-  const { username, isAuthanticated, logout } = useAuth();
-  const [anchorElUser, setAnchorElUser] = React.useState<null | HTMLElement>(null);
+  const { username, isAuthenticated, isAdmin, logout } = useAuth();
+  const [anchorElUser, setAnchorElUser] = React.useState<null | HTMLElement>(
+    null
+  );
   const navigate = useNavigate();
 
   const handleOpenUserMenu = (event: React.MouseEvent<HTMLElement>) => {
@@ -31,20 +33,19 @@ function Navbar() {
   const handleCloseUserMenu = () => setAnchorElUser(null);
 
   const handleLogin = () => navigate("/login");
-
   const handleLogout = () => {
     logout();
     navigate("/");
     handleCloseUserMenu();
   };
-
   const handleCart = () => navigate("/cart");
-
-  // Define a dedicated function for My Orders
   const handleMyOrders = () => {
     navigate("/my-orders");
     handleCloseUserMenu();
   };
+  const handleManageProducts = () => navigate("/admin/products/list");
+  const handleAddProducts = () => navigate("/admin/products/add");
+  const handleViewOrders = () => navigate("/admin/orders");
 
   return (
     <AppBar
@@ -59,10 +60,7 @@ function Navbar() {
       <Container maxWidth="xl">
         <Toolbar
           disableGutters
-          sx={{
-            py: { xs: 0.5, md: 1 },
-            px: { xs: 1, sm: 0 },
-          }}
+          sx={{ py: { xs: 0.5, md: 1 }, px: { xs: 1, sm: 0 } }}
         >
           <Box
             sx={{
@@ -73,7 +71,7 @@ function Navbar() {
               gap: { xs: 1, sm: 2 },
             }}
           >
-            {/* Unified Logo Section */}
+            {/* Logo (always visible) */}
             <Box
               sx={{
                 display: "flex",
@@ -116,39 +114,59 @@ function Navbar() {
                 color: "common.white",
               }}
             >
-              {/* Cart Icon */}
-              <IconButton
-                aria-label="cart"
-                onClick={handleCart}
-                sx={{
-                  p: { xs: "6px", md: "8px" },
-                  "&:hover": { backgroundColor: "rgba(255, 255, 255, 0.08)" },
-                }}
-              >
-                <Badge
-                  badgeContent={cartItem.length}
-                  color="secondary"
+              {/* 1) If a “user” is logged in, show their Cart icon */}
+              {!isAdmin && isAuthenticated && (
+                <IconButton
+                  aria-label="cart"
+                  onClick={handleCart}
                   sx={{
-                    "& .MuiBadge-badge": {
-                      right: { xs: -2, md: -4 },
-                      top: { xs: 4, md: 8 },
-                      fontWeight: 600,
-                      fontSize: { xs: "0.7rem", md: "0.8rem" },
-                    },
+                    p: { xs: "6px", md: "8px" },
+                    "&:hover": { backgroundColor: "rgba(255, 255, 255, 0.08)" },
                   }}
                 >
-                  <ShoppingCartIcon
+                  <Badge
+                    badgeContent={cartItem.length}
+                    color="secondary"
                     sx={{
-                      fontSize: { xs: 24, md: 28 },
-                      color: "common.white",
-                      "&:hover": { color: "secondary.main" },
+                      "& .MuiBadge-badge": {
+                        right: { xs: -2, md: -4 },
+                        top: { xs: 4, md: 8 },
+                        fontWeight: 600,
+                        fontSize: { xs: "0.7rem", md: "0.8rem" },
+                      },
                     }}
-                  />
-                </Badge>
-              </IconButton>
+                  >
+                    <ShoppingCartIcon
+                      sx={{
+                        fontSize: { xs: 24, md: 28 },
+                        color: "common.white",
+                        "&:hover": { color: "secondary.main" },
+                      }}
+                    />
+                  </Badge>
+                </IconButton>
+              )}
 
-              {/* User Section */}
-              {isAuthanticated ? (
+              {/* 2) If an admin is logged in, show only admin links */}
+              {isAuthenticated && isAdmin && (
+                <>
+                  <Button color="inherit" onClick={handleAddProducts}>
+                    Add Products
+                  </Button>
+                  <Button color="inherit" onClick={handleManageProducts}>
+                    Manage Products
+                  </Button>
+                  <Button color="inherit" onClick={handleViewOrders}>
+                    View Orders
+                  </Button>
+                  <Button color="inherit" onClick={handleLogout}>
+                    Logout
+                  </Button>
+                </>
+              )}
+
+              {/* 3) If a regular user is logged in, show their avatar / dropdown */}
+              {!isAdmin && isAuthenticated ? (
                 <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
                   <Tooltip title="Account settings">
                     <IconButton
@@ -214,22 +232,24 @@ function Navbar() {
                   </Menu>
                 </Box>
               ) : (
-                <Button
-                  variant="contained"
-                  color="secondary"
-                  onClick={handleLogin}
-                  sx={{
-                    borderRadius: 20,
-                    px: { xs: 2, md: 3 },
-                    py: { xs: 0.5, md: 0.8 },
-                    fontSize: { xs: "0.8rem", md: "0.9rem" },
-                    fontWeight: 600,
-                    letterSpacing: 0.5,
-                    minWidth: { xs: "fit-content", md: "auto" },
-                  }}
-                >
-                  Sign Insds
-                </Button>
+                // 4) If nobody is logged in (guest), show “Sign In”
+                !isAdmin && (
+                  <Button
+                    variant="contained"
+                    color="secondary"
+                    onClick={handleLogin}
+                    sx={{
+                      borderRadius: 20,
+                      px: { xs: 2, md: 3 },
+                      py: { xs: 0.5, md: 0.8 },
+                      fontSize: { xs: "0.8rem", md: "0.9rem" },
+                      fontWeight: 600,
+                      letterSpacing: 0.5,
+                    }}
+                  >
+                    Sign In
+                  </Button>
+                )
               )}
             </Box>
           </Box>
