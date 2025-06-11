@@ -51,14 +51,14 @@ const AdminOrdersPage = () => {
 
   if (error) {
     return (
-      <Container maxWidth="md" sx={{ py: 4 }}>
+      <Container maxWidth="md" sx={{ py: 10 }}>
         <Typography color="error">{error}</Typography>
       </Container>
     );
   }
 
   return (
-    <Container maxWidth="lg" sx={{ py: 4 }}>
+    <Container maxWidth="lg" sx={{ py: 10 }}>
       <Typography variant="h4" gutterBottom>
         All Confirmed Orders
       </Typography>

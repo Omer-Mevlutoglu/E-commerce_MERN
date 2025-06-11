@@ -35,7 +35,7 @@ const CartPage = () => {
   };
 
   return (
-    <Container maxWidth="lg" sx={{ py: 4, minHeight: "80vh" }}>
+    <Container maxWidth="lg" sx={{ py: 10, minHeight: "80vh" }}>
       <Typography
         variant="h4"
         gutterBottom

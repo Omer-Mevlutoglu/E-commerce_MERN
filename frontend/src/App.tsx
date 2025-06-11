@@ -17,6 +17,7 @@ import CartProvider from "./context/Cart/CartProvider";
 import RequireUser from "./Components/RequireUser";
 import HomeGuard from "./Components/HomeGuard";
 import AdminProductListPage from "./pages/AdminProductListPage";
+import Footer from "./Components/Footer";
 
 function App() {
   return (
@@ -61,6 +62,7 @@ function App() {
             {/* 5) Catch‐all: redirect unknown URLs back to home */}
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
+          <Footer/>
         </BrowserRouter>
       </CartProvider>
     </AuthProvider>

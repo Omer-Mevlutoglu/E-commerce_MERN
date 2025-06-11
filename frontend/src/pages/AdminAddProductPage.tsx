@@ -46,7 +46,7 @@ const AdminAddProductPage = () => {
   };
 
   return (
-    <Container maxWidth="sm" sx={{ py: 4 }}>
+    <Container maxWidth="sm" sx={{ py: 10 }}>
       <Typography variant="h4" gutterBottom>
         Add New Product
       </Typography>

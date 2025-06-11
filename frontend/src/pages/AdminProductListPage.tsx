@@ -62,7 +62,7 @@ const AdminProductListPage = () => {
   };
 
   return (
-    <Container maxWidth="lg" sx={{ py: 4 }}>
+    <Container maxWidth="lg" sx={{ py: 10 }}>
       <Typography variant="h4" gutterBottom>
         All Products (Admin)
       </Typography>

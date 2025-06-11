@@ -30,7 +30,7 @@ const OrderConfirmationPage = () => {
   }, []);
 
   return (
-    <Container maxWidth="lg" sx={{ py: 4, minHeight: "80vh" }}>
+    <Container maxWidth="lg" sx={{ py: 10, minHeight: "80vh" }}>
       <Box sx={{ textAlign: "center", mb: 6 }}>
         <CheckCircleIcon
           sx={{
