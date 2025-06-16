@@ -10,7 +10,7 @@ const CartProvider: FC<PropsWithChildren> = ({ children }) => {
   const [cartItem, setCartItem] = useState<CartItem[]>([]);
   const [totalAmount, setTotalAmount] = useState<number>(0);
   const [error, setError] = useState("");
-  const { token } = useAuth();
+  const { token, isAdmin } = useAuth();
   const [open, setOpen] = useState(false);
 
   const handleClose = (
@@ -39,7 +39,7 @@ const CartProvider: FC<PropsWithChildren> = ({ children }) => {
   };
 
   useEffect(() => {
-    if (!token) return;
+    if (!token || isAdmin) return;
 
     const fetchCart = async () => {
       try {
@@ -52,12 +52,12 @@ const CartProvider: FC<PropsWithChildren> = ({ children }) => {
         setCartItem(mapCartItems(data.items));
         setTotalAmount(data.totalAmount);
       } catch {
-        showError("Failed to get data");
+        showError("Failed to get cart data");
       }
     };
 
     fetchCart();
-  }, [token]);
+  }, [token, isAdmin]);
 
   const addItemToCart = async (productId: string) => {
     try {

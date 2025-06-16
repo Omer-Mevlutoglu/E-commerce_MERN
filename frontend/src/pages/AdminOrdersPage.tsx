@@ -60,7 +60,7 @@ const AdminOrdersPage = () => {
   return (
     <Container maxWidth="lg" sx={{ py: 10 }}>
       <Typography variant="h4" gutterBottom>
-        All Confirmed Orders
+        All Confirmed Orders (Admin View)
       </Typography>
 
       {orders.length === 0 ? (
