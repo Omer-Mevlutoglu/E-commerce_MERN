@@ -8,7 +8,7 @@ A full-stack e-commerce platform built with the MERN stack—MongoDB (local), Ex
 
 ### Watch the demo video below to see Laptopia in action!
 
-[![Laptopia Demo](https://img.youtube.com/vi/tSwDvwmv5j4/0.jpg)](https://youtu.be/tSwDvwmv5j4)
+[![Laptopia Demo](https://img.youtube.com/vi/tSwDvwmv5j4/0.jpg)](https://youtu.be/Vn9fql7lTDA)
 
 ---
 
