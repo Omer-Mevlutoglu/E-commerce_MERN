@@ -11,6 +11,9 @@
     "build": "rimraf dist && tsc",
     "start": "node dist/index.js",
     "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
     "seed:demo": "ts-node src/scripts/seedDemoUsers.ts",
     "migrate:orders": "ts-node src/scripts/migrateOrderFields.ts"
   },
@@ -34,9 +37,14 @@
     "@types/express": "^5.0.0",
     "@types/jsonwebtoken": "^9.0.7",
     "@types/node": "^22.10.5",
+    "@types/supertest": "^7.2.1",
+    "@vitest/coverage-v8": "^4.1.10",
+    "mongodb-memory-server": "^11.2.0",
     "nodemon": "^3.1.9",
     "rimraf": "^6.0.1",
+    "supertest": "^7.2.2",
     "ts-node": "^10.9.2",
-    "typescript": "^5.7.2"
+    "typescript": "^5.7.2",
+    "vitest": "^4.1.10"
   }
 }

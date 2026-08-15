@@ -1,8 +1,10 @@
 # Laptopia – MERN Stack E-Commerce
 
-[![React](https://img.shields.io/badge/React-18.2.0-blue)](https://reactjs.org/)  
-[![Node.js](https://img.shields.io/badge/Node.js-18.17.1-green)](https://nodejs.org/)  
-[![MongoDB](https://img.shields.io/badge/MongoDB-7.0-green)](https://www.mongodb.com/)  
+[![CI](https://github.com/Omer-Mevlutoglu/E-commerce_MERN/actions/workflows/ci.yml/badge.svg)](https://github.com/Omer-Mevlutoglu/E-commerce_MERN/actions/workflows/ci.yml)
+[![React](https://img.shields.io/badge/React-19-blue)](https://reactjs.org/)
+[![Node.js](https://img.shields.io/badge/Node.js-20+-green)](https://nodejs.org/)
+[![MongoDB](https://img.shields.io/badge/MongoDB-7.0-green)](https://www.mongodb.com/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.7-blue)](https://www.typescriptlang.org/)
 
 A full-stack e-commerce platform built with the MERN stack—MongoDB (local), Express, React, and Node.js—featuring **role-based access** (user vs. admin), product browsing, cart management, secure checkout, and an admin dashboard for inventory and order control.
 
@@ -156,6 +158,52 @@ Demo accounts are seeded automatically:
 | `frontend` | `npm run build`     | type-check + production bundle to `dist/`  |
 | `frontend` | `npm run preview`   | serve the built bundle locally             |
 | `frontend` | `npm run lint`      | ESLint                                     |
+
+---
+
+## 🧪 Testing
+
+**133 unit and integration tests, plus 9 end-to-end specs.** Every push runs
+lint, typecheck, tests and build for both apps, then the E2E suite against a
+real API and database.
+
+```bash
+cd backend  && npm test          # 84 tests
+cd frontend && npm test          # 49 tests
+```
+
+| Suite | Tooling | Covers |
+| ----- | ------- | ------ |
+| Backend unit + integration | Vitest, Supertest, `mongodb-memory-server` | services, middleware, every route |
+| Frontend component | Vitest, Testing Library, MSW | providers, guards, API client, CartPage |
+| End-to-end | Playwright (Chromium) | customer purchase journey, admin management |
+
+Coverage: **90% backend** (services 90%), and 88–95% on the frontend modules
+that hold logic — providers, guards and the API client. Presentational pages are
+covered by the E2E suite instead.
+
+The backend tests start their own **in-memory MongoDB replica set**, so they need
+no running database and still exercise the transactional checkout path. Two of
+them fire concurrent checkouts at a single unit of stock and assert exactly one
+wins — the reason checkout uses a conditional update rather than read-then-write.
+
+### End-to-end
+
+E2E needs a running API and a built frontend. Point the API at a throwaway
+database:
+
+```bash
+cd backend && PORT=3098 DATABASE_URL=mongodb://localhost:27017/laptopia_e2e SEED_DEMO_USERS=true CORS_ORIGIN=http://localhost:4173 npm run dev
+```
+
+Then, in another terminal:
+
+```bash
+cd frontend && VITE_BASE_URL=http://localhost:3098 npm run build && npm run test:e2e
+```
+
+Playwright starts its own preview server on port 4173. Use `--ui` for the
+interactive runner, or `--headed` to watch it drive the browser.
 
 ---
 

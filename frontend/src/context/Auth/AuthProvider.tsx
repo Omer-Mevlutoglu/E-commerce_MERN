@@ -1,5 +1,12 @@
 // context/Auth/AuthProvider.tsx
-import { FC, PropsWithChildren, useState, useEffect, useCallback } from "react";
+import {
+  FC,
+  PropsWithChildren,
+  useState,
+  useEffect,
+  useCallback,
+  useRef,
+} from "react";
 import { jwtDecode } from "jwt-decode";
 import { AuthContext } from "./AuthContext";
 import { api, configureApiClient } from "../../api/client";
@@ -74,15 +81,26 @@ const AuthProvider: FC<PropsWithChildren> = ({ children }) => {
     setUserRole(decodeToken(token)?.role ?? null);
   }, [token]);
 
-  // Give the API client a way to read the current token and to end the session
-  // when the server rejects it. Registered rather than imported, so the client
-  // does not have to depend on this provider.
-  useEffect(() => {
-    configureApiClient({
-      getToken: () => token,
-      onUnauthorized: logout,
-    });
-  }, [token, logout]);
+  /**
+   * Give the API client a way to read the current token and to end the session
+   * when the server rejects it. Registered rather than imported, so the client
+   * does not have to depend on this provider.
+   *
+   * Done during render, NOT in an effect: React runs child effects before
+   * parent effects, so a page that fetches on mount (MyOrdersPage) would fire
+   * its first request before the client knew about the token — and get a 401.
+   * Reading through refs keeps the callbacks current without re-registering.
+   */
+  const tokenRef = useRef(token);
+  tokenRef.current = token;
+
+  const logoutRef = useRef(logout);
+  logoutRef.current = logout;
+
+  configureApiClient({
+    getToken: () => tokenRef.current,
+    onUnauthorized: () => logoutRef.current(),
+  });
 
   const login = (username: string, token: string) => {
     setUsername(username);
