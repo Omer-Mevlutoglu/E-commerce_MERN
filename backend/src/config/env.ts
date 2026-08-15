@@ -31,6 +31,20 @@ const envSchema = z.object({
 
   // Comma-separated list of allowed browser origins.
   CORS_ORIGIN: z.string().default("http://localhost:5173"),
+
+  // Enable when running behind a reverse proxy / PaaS load balancer
+  // (Railway, Render, Fly, nginx) so the real client IP is honoured.
+  TRUST_PROXY: z
+    .enum(["true", "false"])
+    .default("false")
+    .transform((v) => v === "true"),
+
+  // Creates the demo admin + customer accounts on boot. Intended for the
+  // public demo deployment; leave off for anything with real users.
+  SEED_DEMO_USERS: z
+    .enum(["true", "false"])
+    .default("false")
+    .transform((v) => v === "true"),
 });
 
 const parsed = envSchema.safeParse(process.env);

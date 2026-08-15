@@ -77,24 +77,47 @@ A full-stack e-commerce platform built with the MERN stack—MongoDB (local), Ex
 
 ---
 
-1. **Clone the Repository**  
+### Option A — Docker (everything in one command)
+
+```bash
+docker compose up --build
+```
+
+* **Web** → [http://localhost:5173](http://localhost:5173)
+* **API** → [http://localhost:3001](http://localhost:3001) (health check at `/health`)
+* **MongoDB** → `localhost:27017`, started as a single-node replica set so
+  checkout runs inside a real transaction.
+
+Demo accounts are seeded automatically:
+
+| Role     | Email                  | Password     |
+| -------- | ---------------------- | ------------ |
+| Customer | `demo@laptopia.dev`    | `Demo1234!`  |
+| Admin    | `admin@laptopia.dev`   | `Admin1234!` |
+
+### Option B — Manual setup
+
+1. **Clone the Repository**
+
    ```bash
-   git clone https://github.com/yourusername/laptopia.git
-   cd laptopia
+   git clone https://github.com/Omer-Mevlutoglu/E-commerce_MERN.git
+   cd E-commerce_MERN
+   ```
 
 2. **Backend Setup**
 
    ```bash
    cd backend
    npm install
+   cp .env.example .env
    ```
 
-   Create `.env` with:
+   Fill in `.env` — the server validates it at boot and refuses to start if
+   anything is missing or malformed. `JWT_SECRET` must be **at least 32
+   characters**; generate one with:
 
-   ```
-   DATABASE_URL=mongodb://localhost:27017/laptopia
-   JWT_SECRET=your_jwt_secret
-   PORT=3001
+   ```bash
+   node -e "console.log(require('crypto').randomBytes(48).toString('hex'))"
    ```
 
    Start the backend:
@@ -103,28 +126,77 @@ A full-stack e-commerce platform built with the MERN stack—MongoDB (local), Ex
    npm run dev
    ```
 
-   * Connects to local MongoDB, seeds sample products if none exist, and listens on [http://localhost:3001](http://localhost:3001).
+   * Connects to MongoDB, seeds sample products if none exist, and listens on
+     the port from `PORT` (default 3001).
+   * A standalone `mongod` works, but checkout falls back to compensating
+     writes instead of transactions. For full atomicity use a replica set
+     (`mongod --replSet rs0`, then `rs.initiate()`) or MongoDB Atlas.
 
 3. **Frontend Setup**
 
    ```bash
    cd ../frontend
    npm install
-   ```
-
-   Create `.env` with:
-
-   ```
-   VITE_BASE_URL=http://localhost:3001
-   ```
-
-   Start the frontend:
-
-   ```bash
+   cp .env.example .env
    npm run dev
    ```
 
-   * Runs on [http://localhost:5173](http://localhost:5173) by default. For network testing: `vite --host`.
+   * Runs on [http://localhost:5173](http://localhost:5173).
+
+### Available scripts
+
+| Location   | Command             | Does                                       |
+| ---------- | ------------------- | ------------------------------------------ |
+| `backend`  | `npm run dev`       | nodemon + ts-node, restarts on change      |
+| `backend`  | `npm run build`     | compiles TypeScript to `dist/`             |
+| `backend`  | `npm start`         | runs the compiled build                    |
+| `backend`  | `npm run typecheck` | type-check without emitting                |
+| `backend`  | `npm run seed:demo` | create the demo accounts                   |
+| `frontend` | `npm run dev`       | Vite dev server                            |
+| `frontend` | `npm run build`     | type-check + production bundle to `dist/`  |
+| `frontend` | `npm run preview`   | serve the built bundle locally             |
+| `frontend` | `npm run lint`      | ESLint                                     |
+
+---
+
+## 🚢 Deployment
+
+The backend ships as a Docker image; the frontend is a static bundle.
+
+### Backend → Railway
+
+1. New project → Deploy from GitHub repo → set **root directory** to `backend`.
+   `backend/railway.json` selects the Dockerfile builder and points the health
+   check at `/health`.
+2. Add a MongoDB database (Railway plugin or MongoDB Atlas) and copy its
+   connection string.
+3. Set these variables:
+
+   | Variable          | Value                                              |
+   | ----------------- | -------------------------------------------------- |
+   | `NODE_ENV`        | `production`                                        |
+   | `DATABASE_URL`    | your MongoDB connection string                      |
+   | `JWT_SECRET`      | 32+ random characters                               |
+   | `CORS_ORIGIN`     | your Vercel URL, e.g. `https://laptopia.vercel.app` |
+   | `TRUST_PROXY`     | `true`                                              |
+   | `SEED_DEMO_USERS` | `true` for a public demo, otherwise `false`         |
+
+   Do **not** set `PORT` — Railway injects it.
+
+### Frontend → Vercel
+
+1. Import the repo → set **root directory** to `frontend`. Vercel detects Vite;
+   `frontend/vercel.json` adds the SPA rewrites that `BrowserRouter` needs so a
+   refresh on `/cart` does not 404.
+2. Set `VITE_BASE_URL` to your Railway URL (no trailing slash).
+3. Redeploy after changing it — Vite inlines env vars at **build** time, so a
+   variable change requires a rebuild, not just a restart.
+
+### Order of operations
+
+Deploy the backend first, then set `VITE_BASE_URL` on Vercel, then set
+`CORS_ORIGIN` on Railway to the Vercel URL. The two reference each other, so one
+of them always needs a second pass.
 
 ---
 

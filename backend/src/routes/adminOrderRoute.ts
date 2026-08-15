@@ -7,7 +7,7 @@ import { getAllOrders } from "../services/adminOrderService";
 const router = express.Router();
 router.use(validateJWT, requireAdmin);
 
-router.get("/", async (req, res) => {
+router.get("/", async (_req, res) => {
   try {
     const orders = await getAllOrders();
      res.status(200).json(orders);

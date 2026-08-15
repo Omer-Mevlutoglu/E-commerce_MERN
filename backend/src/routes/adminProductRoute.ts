@@ -1,6 +1,5 @@
 // routes/adminProductRoute.ts
-import express, { request, response } from "express";
-import { Request, Response, NextFunction } from "express";
+import express, { Request, Response } from "express";
 
 import validateJWT from "../middlewares/validateJWT";
 import requireAdmin from "../middlewares/requireAdmin";

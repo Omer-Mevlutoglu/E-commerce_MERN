@@ -3,7 +3,6 @@ import userModel from "../models/userModel";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcrypt";
 import { orderModel } from "../models/orderModel";
-import { IUser } from "../models/userModel"; // If you have an IUser interface
 import { env } from "../config/env";
 
 // 1) Define the shape of the JWT payload we intend to sign

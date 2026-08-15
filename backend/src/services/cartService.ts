@@ -1,5 +1,5 @@
 import mongoose, { ClientSession } from "mongoose";
-import { cartModel, Icart, IcartItem } from "../models/cartModel";
+import { cartModel, IcartItem } from "../models/cartModel";
 import productModel from "../models/productModel";
 import { IorderItem, orderModel } from "../models/orderModel";
 
@@ -243,7 +243,7 @@ export const clearCart = async ({ userId }: ClearCart) => {
   cart.items = [];
   cart.totalAmount = 0;
 
-  const updatedCart = await cart.save();
+  await cart.save();
 
   return {
     data: await getActiveCartForUser({ userId, populateProduct: true }),

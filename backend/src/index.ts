@@ -7,12 +7,20 @@ import mongoose from "mongoose";
 import { env } from "./config/env";
 import userRoute from "./routes/userRoute";
 import { seedIntialProducts } from "./services/productService";
+import { seedDemoUsers } from "./services/demoSeedService";
 import productRoute from "./routes/productRoute";
 import cartRoute from "./routes/cartRoute";
 import adminProductRoute from "./routes/adminProductRoute";
 import adminOrderRoute from "./routes/adminOrderRoute";
 
 const app = express();
+
+// Railway (and any PaaS load balancer) terminates TLS upstream and forwards
+// the real client IP in X-Forwarded-For. Without this, express-rate-limit sees
+// every request as coming from the proxy and buckets all users together.
+if (env.TRUST_PROXY) {
+  app.set("trust proxy", 1);
+}
 
 // Sensible security headers (CSP, HSTS, X-Frame-Options, nosniff, …).
 app.use(helmet());
@@ -65,6 +73,10 @@ const start = async () => {
   // seed the default products to db (now that the connection is established)
   await seedIntialProducts();
 
+  if (env.SEED_DEMO_USERS) {
+    await seedDemoUsers();
+  }
+
   app.get("/health", (_req, res) => {
     res.status(200).json({
       status: "ok",
@@ -82,9 +94,39 @@ const start = async () => {
   app.use("/admin/products", adminProductRoute);
   app.use("/admin/orders", adminOrderRoute);
 
-  app.listen(env.PORT, () => {
-    console.log(`Server is running on ${env.PORT}`);
+  const server = app.listen(env.PORT, () => {
+    console.log(`Server is running on ${env.PORT} [${env.NODE_ENV}]`);
   });
+
+  // Platforms send SIGTERM before replacing a container on redeploy. Draining
+  // in-flight requests and closing the DB connection avoids dropped responses
+  // and half-finished writes mid-deploy.
+  const shutdown = async (signal: string) => {
+    console.log(`${signal} received, shutting down`);
+
+    const forced = setTimeout(() => {
+      console.error("Shutdown timed out, forcing exit");
+      process.exit(1);
+    }, 10_000);
+    forced.unref();
+
+    server.close(async () => {
+      try {
+        await mongoose.connection.close(false);
+        console.log("Shutdown complete");
+        process.exit(0);
+      } catch (err) {
+        console.error("Error during shutdown", err);
+        process.exit(1);
+      }
+    });
+  };
+
+  process.on("SIGTERM", () => void shutdown("SIGTERM"));
+  process.on("SIGINT", () => void shutdown("SIGINT"));
 };
 
-start();
+start().catch((err) => {
+  console.error("Fatal startup error", err);
+  process.exit(1);
+});
