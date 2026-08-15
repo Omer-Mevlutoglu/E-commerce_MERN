@@ -1,0 +1,99 @@
+# ─────────────────────────────────────────────────────────────
+# Laptopia — single root .gitignore for backend/ and frontend/
+# Patterns without a leading slash match at any depth, so they
+# cover both workspaces. Use /path for root-only rules.
+# ─────────────────────────────────────────────────────────────
+
+# ── Dependencies ─────────────────────────────────────────────
+node_modules/
+.pnp
+.pnp.js
+jspm_packages/
+
+# ── Environment / secrets ────────────────────────────────────
+.env
+.env.local
+.env.development
+.env.development.local
+.env.test
+.env.test.local
+.env.production
+.env.production.local
+*.pem
+*.key
+# …but always keep the templates
+!.env.example
+!.env.template
+!.env.sample
+
+# ── Build output ─────────────────────────────────────────────
+dist/
+dist-ssr/
+build/
+out/
+*.local
+
+# ── TypeScript ───────────────────────────────────────────────
+*.tsbuildinfo
+node_modules/.tmp/
+
+# ── Logs ─────────────────────────────────────────────────────
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
+
+# ── Tests & coverage ─────────────────────────────────────────
+coverage/
+*.lcov
+.nyc_output/
+playwright-report/
+test-results/
+blob-report/
+.playwright/
+
+# ── Caches ───────────────────────────────────────────────────
+.cache/
+.vite/
+.eslintcache
+.npm
+.parcel-cache/
+.turbo/
+
+# ── Editors & IDEs ───────────────────────────────────────────
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json.example
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+*.swp
+*~
+
+# ── Operating system ─────────────────────────────────────────
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# ── Runtime / misc ───────────────────────────────────────────
+pids/
+*.pid
+*.seed
+*.pid.lock
+.vercel/
+.netlify/
+/docs/
