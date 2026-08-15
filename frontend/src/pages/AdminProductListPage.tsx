@@ -6,58 +6,45 @@ import {
   Card,
   CardContent,
   CardMedia,
+  Chip,
   Container,
   Grid,
   Typography,
 } from "@mui/material";
-import { useAuth } from "../context/Auth/AuthContext";
-
-interface Product {
-  _id: string;
-  title: string;
-  image: string;
-  price: number;
-  stock: number;
-}
-
-const BASE_URL = import.meta.env.VITE_BASE_URL;
+import { api, errorMessage } from "../api/client";
+import { product } from "../types/product";
 
 const AdminProductListPage = () => {
-  const { token } = useAuth();
-
-  const [products, setProducts] = useState<Product[]>([]);
+  const [products, setProducts] = useState<product[]>([]);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const fetchProducts = async () => {
+    (async () => {
       try {
-        const response = await fetch(`${BASE_URL}/product`);
-        if (!response.ok) {
-          throw new Error("Failed to load products");
-        }
-        const data = await response.json();
-        setProducts(data);
+        // The admin listing, not the public catalogue — it includes retired
+        // products so they can be restored.
+        setProducts(await api.get<product[]>("/admin/products"));
       } catch (err) {
-        setError((err as Error).message);
+        setError(errorMessage(err, "Failed to load products"));
       }
-    };
-    fetchProducts();
+    })();
   }, []);
 
-  const handleDelete = async (productId: string) => {
+  const setActive = async (productId: string, isActive: boolean) => {
     try {
-      const resp = await fetch(`${BASE_URL}/admin/products/${productId}`, {
-        method: "DELETE",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-      if (!resp.ok) {
-        throw new Error("Delete failed");
+      if (isActive) {
+        await api.post(`/admin/products/${productId}/restore`);
+      } else {
+        await api.delete(`/admin/products/${productId}`);
       }
-      setProducts((prev) => prev.filter((p) => p._id !== productId));
+      setProducts((prev) =>
+        prev.map((p) => (p._id === productId ? { ...p, isActive } : p))
+      );
+      setError(null);
     } catch (err) {
-      setError((err as Error).message);
+      setError(
+        errorMessage(err, isActive ? "Restore failed" : "Could not retire product")
+      );
     }
   };
 
@@ -74,7 +61,13 @@ const AdminProductListPage = () => {
       <Grid container spacing={3}>
         {products.map((product) => (
           <Grid item xs={12} sm={6} md={4} key={product._id}>
-            <Card sx={{ borderRadius: 2, boxShadow: 3 }}>
+            <Card
+              sx={{
+                borderRadius: 2,
+                boxShadow: 3,
+                opacity: product.isActive === false ? 0.55 : 1,
+              }}
+            >
               <CardMedia
                 component="img"
                 height="180"
@@ -85,9 +78,21 @@ const AdminProductListPage = () => {
               <CardContent
                 sx={{ display: "flex", flexDirection: "column", gap: 1 }}
               >
-                <Typography variant="h6" sx={{ fontWeight: 600 }}>
-                  {product.title}
-                </Typography>
+                <Box
+                  sx={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "flex-start",
+                    gap: 1,
+                  }}
+                >
+                  <Typography variant="h6" sx={{ fontWeight: 600 }}>
+                    {product.title}
+                  </Typography>
+                  {product.isActive === false && (
+                    <Chip label="Retired" size="small" color="default" />
+                  )}
+                </Box>
                 <Typography variant="body1" color="text.secondary">
                   Price: ${product.price.toFixed(2)}
                 </Typography>
@@ -95,14 +100,25 @@ const AdminProductListPage = () => {
                   Stock: {product.stock}
                 </Typography>
                 <Box sx={{ display: "flex", gap: 1, mt: 2 }}>
-                  <Button
-                    variant="contained"
-                    color="error"
-                    size="small"
-                    onClick={() => handleDelete(product._id)}
-                  >
-                    Delete
-                  </Button>
+                  {product.isActive === false ? (
+                    <Button
+                      variant="contained"
+                      color="success"
+                      size="small"
+                      onClick={() => setActive(product._id, true)}
+                    >
+                      Restore
+                    </Button>
+                  ) : (
+                    <Button
+                      variant="contained"
+                      color="error"
+                      size="small"
+                      onClick={() => setActive(product._id, false)}
+                    >
+                      Retire
+                    </Button>
+                  )}
                 </Box>
               </CardContent>
             </Card>

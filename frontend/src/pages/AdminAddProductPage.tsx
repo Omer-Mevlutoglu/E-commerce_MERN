@@ -1,16 +1,13 @@
 import { Box, Button, Container, TextField, Typography } from "@mui/material";
 import { useRef, useState } from "react";
-import { useAuth } from "../context/Auth/AuthContext";
 import { useNavigate } from "react-router-dom";
-
-const BASE_URL = import.meta.env.VITE_BASE_URL;
+import { api, errorMessage } from "../api/client";
 
 const AdminAddProductPage = () => {
   const titleRef = useRef<HTMLInputElement>(null);
   const imageRef = useRef<HTMLInputElement>(null);
   const priceRef = useRef<HTMLInputElement>(null);
   const stockRef = useRef<HTMLInputElement>(null);
-  const { token } = useAuth();
   const navigate = useNavigate();
   const [error, setError] = useState("");
 
@@ -26,22 +23,13 @@ const AdminAddProductPage = () => {
       return;
     }
 
+    setError("");
+
     try {
-      const response = await fetch(`${BASE_URL}/admin/products`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ title, image, price, stock }),
-      });
-      if (!response.ok) {
-        throw new Error("Failed to add product");
-      }
-      // Optionally: you could clear the form or navigate elsewhere
+      await api.post("/admin/products", { title, image, price, stock });
       navigate("/admin/products/list");
     } catch (err) {
-      setError((err as Error).message);
+      setError(errorMessage(err, "Failed to add product"));
     }
   };
 

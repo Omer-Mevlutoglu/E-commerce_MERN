@@ -12,8 +12,7 @@ import {
 } from "@mui/material";
 import ProductCard from "../Components/ProductCard";
 import { product } from "../types/product";
-
-const BASE_URL = import.meta.env.VITE_BASE_URL;
+import { api } from "../api/client";
 
 const HomePage = () => {
   const theme = useTheme();
@@ -23,9 +22,7 @@ const HomePage = () => {
   useEffect(() => {
     (async () => {
       try {
-        const response = await fetch(`${BASE_URL}/product`);
-        const data = await response.json();
-        setProducts(data);
+        setProducts(await api.get<product[]>("/products", { auth: false }));
       } catch {
         setError(true);
       }

@@ -5,13 +5,15 @@ import rateLimit from "express-rate-limit";
 import mongoose from "mongoose";
 // Imported first: parsing the environment fails fast, before anything else runs.
 import { env } from "./config/env";
-import userRoute from "./routes/userRoute";
 import { seedIntialProducts } from "./services/productService";
 import { seedDemoUsers } from "./services/demoSeedService";
+import authRoute from "./routes/authRoute";
 import productRoute from "./routes/productRoute";
 import cartRoute from "./routes/cartRoute";
+import orderRoute from "./routes/orderRoute";
 import adminProductRoute from "./routes/adminProductRoute";
 import adminOrderRoute from "./routes/adminOrderRoute";
+import { errorHandler, notFoundHandler } from "./middlewares/errorHandler";
 
 const app = express();
 
@@ -85,14 +87,25 @@ const start = async () => {
     });
   });
 
-  app.use("/users/login", authLimiter);
-  app.use("/users/register", authLimiter);
+  // Everything lives under a version prefix so a future breaking change can
+  // ship as /api/v2 while existing clients keep working.
+  const api = express.Router();
 
-  app.use("/users", userRoute);
-  app.use("/product", productRoute);
-  app.use("/cart", cartRoute);
-  app.use("/admin/products", adminProductRoute);
-  app.use("/admin/orders", adminOrderRoute);
+  api.use("/auth/login", authLimiter);
+  api.use("/auth/register", authLimiter);
+
+  api.use("/auth", authRoute);
+  api.use("/products", productRoute);
+  api.use("/cart", cartRoute); // singular: a user has exactly one cart
+  api.use("/orders", orderRoute);
+  api.use("/admin/products", adminProductRoute);
+  api.use("/admin/orders", adminOrderRoute);
+
+  app.use("/api/v1", api);
+
+  // Must come after every route, and in this order.
+  app.use(notFoundHandler);
+  app.use(errorHandler);
 
   const server = app.listen(env.PORT, () => {
     console.log(`Server is running on ${env.PORT} [${env.NODE_ENV}]`);

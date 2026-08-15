@@ -264,36 +264,67 @@ of them always needs a second pass.
 
 ## 📚 API Overview
 
+All endpoints are under **`/api/v1`**. Unversioned paths return 404.
+
+Errors always come back as JSON:
+
+```jsonc
+{
+  "error": "ValidationError",       // machine-readable code
+  "message": "Invalid request body",
+  "details": { "price": ["Price cannot be negative"] }  // when applicable
+}
+```
+
+Status codes: `400` invalid input · `401` not authenticated · `403` authenticated
+but not permitted · `404` not found · `409` conflict (out of stock, email taken).
+
 ### Public
 
-* **GET /product**
-  List all products (title, image, price, stock).
+| Method | Path | Description |
+| ------ | ---- | ----------- |
+| `GET` | `/api/v1/products` | Active catalogue |
+| `POST` | `/api/v1/auth/register` | `{ firstName, lastName, email, password }` → `{ token }` |
+| `POST` | `/api/v1/auth/login` | `{ email, password }` → `{ token }` |
 
-### Authentication
+Registration always creates a `user`; the role is never read from the request.
+Both auth endpoints are rate-limited to 10 attempts per 15 minutes.
 
-* **POST /users/register**
-  Request: `{ firstName, lastName, email, password }`
-  Response: JWT token (role defaults to “user”).
-* **POST /users/login**
-  Request: `{ email, password }`
-  Response: JWT token (contains `role: "user"` or `"admin"`).
+### Customer (`role === "user"`)
 
-### User-Only (Authorization: Bearer `<token>` with `role === "user"`)
+| Method | Path | Description |
+| ------ | ---- | ----------- |
+| `GET` | `/api/v1/cart` | Active cart, products populated |
+| `POST` | `/api/v1/cart/items` | `{ productId, quantity }` — increments if already present |
+| `PUT` | `/api/v1/cart/items` | `{ productId, quantity }` — sets the quantity |
+| `DELETE` | `/api/v1/cart/items/:productId` | Remove one line |
+| `DELETE` | `/api/v1/cart` | Empty the cart |
+| `POST` | `/api/v1/cart/checkout` | `{ fullName, address, payment: { last4, brand } }` |
+| `GET` | `/api/v1/orders` | The signed-in customer's orders, newest first |
 
-* **GET /cart** – get active cart (populates products)
-* **POST /cart/items** – add item `{ productId, quantity }`
-* **PUT /cart/items** – update quantity `{ productId, quantity }`
-* **DELETE /cart/items/\:productId** – remove a product from cart
-* **DELETE /cart** – clear cart
-* **POST /cart/checkout** – checkout `{ fullName, address, cardNumber, exp, cvc }`
-* **GET /users/my-orders** – list orders for logged-in user
+**Checkout never receives a card number, CVC or expiry date.** The browser
+validates the card and derives `last4` + `brand`; nothing else is transmitted or
+stored. Checkout decrements stock atomically and runs in a transaction where the
+database supports one.
 
-### Admin-Only (Authorization: Bearer `<token>` with `role === "admin"`)
+### Admin (`role === "admin"`)
 
-* **POST /admin/products** – create `{ title, image, price, stock }`
-* **PUT /admin/products/\:productId** – update product
-* **DELETE /admin/products/\:productId** – delete product
-* **GET /admin/orders** – list all confirmed orders (populated user details)
+| Method | Path | Description |
+| ------ | ---- | ----------- |
+| `GET` | `/api/v1/admin/products` | All products, including retired |
+| `POST` | `/api/v1/admin/products` | `{ title, image, price, stock }` |
+| `PUT` | `/api/v1/admin/products/:productId` | Partial update |
+| `DELETE` | `/api/v1/admin/products/:productId` | Retire (soft delete) |
+| `POST` | `/api/v1/admin/products/:productId/restore` | Un-retire |
+| `GET` | `/api/v1/admin/orders` | Every order with customer details |
+
+Products are **retired, not deleted** — a hard delete left dangling references in
+any cart still holding the product.
+
+### Health
+
+`GET /health` → `{ status, uptime, db }`. Not versioned; used by Railway and the
+container healthchecks.
 
 ---
 
@@ -303,9 +334,20 @@ of them always needs a second pass.
   On server start, if no products exist, a set of sample laptops is inserted automatically.
 * **Creating an Admin**
 
-  * Register a normal user, then in MongoDB (Compass or `mongosh`), set `role: "admin"` for that user.
-  * Now log in as that user; you’ll see admin links.
+  * With Docker, or with `SEED_DEMO_USERS=true`, `admin@laptopia.dev` already exists.
+  * Otherwise register a normal user, then in MongoDB set `role: "admin"` on that
+    document and log in again — the role is read from a freshly issued token.
+* **Migrating an existing database**
+
+  ```bash
+  npm run migrate:orders
+  ```
+
+  Renames the old misspelled order fields (`productTtile` → `productTitle`,
+  `unitprice` → `unitPrice`), strips any card data written before it was removed,
+  and marks pre-existing products active. Safe to run more than once.
 * **Testing Auth**
-  Use a REST client (e.g., Thunder Client) to send requests with `Authorization: Bearer <JWT>` and verify that user endpoints (cart, checkout) reject admin tokens and vice versa.
+  Send `Authorization: Bearer <JWT>` and confirm cart endpoints reject admin
+  tokens with 403 and admin endpoints reject customer tokens with 403.
 
 ---

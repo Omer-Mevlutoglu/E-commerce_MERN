@@ -1,53 +1,22 @@
 // pages/AdminOrdersPage.tsx
 import { Box, Card, CardContent, Container, Typography } from "@mui/material";
 import { useEffect, useState } from "react";
-import { useAuth } from "../context/Auth/AuthContext";
-
-interface OrderItem {
-  productTtile: string;
-  productImage: string;
-  unitprice: number;
-  quantity: number;
-}
-
-interface Order {
-  _id: string;
-  orderItems: OrderItem[];
-  total: number;
-  address: string;
-  fullName: string;
-  userId: {
-    _id: string;
-    firstName: string;
-    lastName: string;
-    email: string;
-  };
-}
-
-const BASE_URL = import.meta.env.VITE_BASE_URL;
+import { api, errorMessage } from "../api/client";
+import { AdminOrder } from "../types/Order";
 
 const AdminOrdersPage = () => {
-  const { token } = useAuth();
-  const [orders, setOrders] = useState<Order[]>([]);
+  const [orders, setOrders] = useState<AdminOrder[]>([]);
   const [error, setError] = useState("");
 
   useEffect(() => {
-    const fetchOrders = async () => {
+    (async () => {
       try {
-        const response = await fetch(`${BASE_URL}/admin/orders`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        if (!response.ok) {
-          throw new Error("Failed to load orders");
-        }
-        const data = await response.json();
-        setOrders(data);
+        setOrders(await api.get<AdminOrder[]>("/admin/orders"));
       } catch (err) {
-        setError((err as Error).message);
+        setError(errorMessage(err, "Failed to load orders"));
       }
-    };
-    fetchOrders();
-  }, [token]);
+    })();
+  }, []);
 
   if (error) {
     return (
@@ -75,11 +44,21 @@ const AdminOrdersPage = () => {
                 color="text.secondary"
                 sx={{ mb: 1 }}
               >
-                By: {order.userId.firstName} {order.userId.lastName} (
-                {order.userId.email})
+                {/* userId is null when the customer's account was deleted. */}
+                {order.userId
+                  ? `By: ${order.userId.firstName} ${order.userId.lastName} (${order.userId.email})`
+                  : "By: deleted account"}
+                {order.createdAt &&
+                  ` · ${new Date(order.createdAt).toLocaleString()}`}
               </Typography>
               <Typography>Total: ${order.total.toFixed(2)}</Typography>
               <Typography>Shipping to: {order.address}</Typography>
+              {order.payment?.last4 && (
+                <Typography variant="body2" color="text.secondary">
+                  Paid with {order.payment.brand ?? "card"} ••••{" "}
+                  {order.payment.last4}
+                </Typography>
+              )}
 
               <Box sx={{ mt: 2 }}>
                 <Typography variant="subtitle1">Items:</Typography>
@@ -96,7 +75,7 @@ const AdminOrdersPage = () => {
                     <Box
                       component="img"
                       src={item.productImage}
-                      alt={item.productTtile}
+                      alt={item.productTitle}
                       sx={{
                         width: 60,
                         height: 60,
@@ -105,9 +84,9 @@ const AdminOrdersPage = () => {
                       }}
                     />
                     <Box>
-                      <Typography>{item.productTtile}</Typography>
+                      <Typography>{item.productTitle}</Typography>
                       <Typography variant="body2" color="text.secondary">
-                        {item.quantity} × ${item.unitprice.toFixed(2)}
+                        {item.quantity} × ${item.unitPrice.toFixed(2)}
                       </Typography>
                     </Box>
                   </Box>

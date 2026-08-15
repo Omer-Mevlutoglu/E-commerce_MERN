@@ -1,9 +1,9 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import Container from "@mui/material/Container";
 import Typography from "@mui/material/Typography";
 import { Box, Card, CardContent, CardMedia, Grid2 } from "@mui/material";
 import { useAuth } from "../context/Auth/AuthContext";
 import { useEffect } from "react";
+import { Order, OrderItem } from "../types/Order";
 
 const MyOrdersPage = () => {
   const { getMyOrders, myOrders } = useAuth();
@@ -26,13 +26,23 @@ const MyOrdersPage = () => {
 
       {myOrders && myOrders.length > 0 ? (
         <Grid2 container spacing={4}>
-          {myOrders.map((order: any) => (
+          {myOrders.map((order: Order) => (
             <Grid2 size={{ xs: 12, md: 6 }} key={order._id}>
               <Card sx={{ boxShadow: 3, borderRadius: 2 }}>
                 <CardContent>
                   <Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>
                     Order #{order._id}
                   </Typography>
+                  {order.createdAt && (
+                    <Typography variant="body2" color="text.secondary">
+                      Placed on{" "}
+                      {new Date(order.createdAt).toLocaleDateString(undefined, {
+                        year: "numeric",
+                        month: "long",
+                        day: "numeric",
+                      })}
+                    </Typography>
+                  )}
                   <Typography
                     variant="body2"
                     color="text.secondary"
@@ -55,9 +65,9 @@ const MyOrdersPage = () => {
                       Items:
                     </Typography>
                     {order.orderItems && order.orderItems.length > 0 ? (
-                      order.orderItems.map((item: any) => (
+                      order.orderItems.map((item: OrderItem, index: number) => (
                         <Box
-                          key={item.productTtile}
+                          key={`${item.productTitle}-${index}`}
                           sx={{
                             display: "flex",
                             alignItems: "center",
@@ -67,7 +77,7 @@ const MyOrdersPage = () => {
                           <CardMedia
                             component="img"
                             image={item.productImage}
-                            alt={item.productTtile}
+                            alt={item.productTitle}
                             sx={{
                               width: 60,
                               height: 60,
@@ -80,10 +90,10 @@ const MyOrdersPage = () => {
                               variant="body2"
                               sx={{ fontWeight: 600 }}
                             >
-                              {item.productTtile}
+                              {item.productTitle}
                             </Typography>
                             <Typography variant="body2" color="text.secondary">
-                              {item.quantity} x ${item.unitprice}
+                              {item.quantity} x ${item.unitPrice.toFixed(2)}
                             </Typography>
                           </Box>
                         </Box>

@@ -2,8 +2,7 @@ import { Box, Container, Typography, TextField, Button } from "@mui/material";
 import { useRef, useState } from "react";
 import { useAuth } from "../context/Auth/AuthContext";
 import { useNavigate } from "react-router-dom";
-
-const BASE_URL = import.meta.env.VITE_BASE_URL;
+import { api, errorMessage } from "../api/client";
 
 const LoginPage = () => {
   const [error, setError] = useState("");
@@ -17,29 +16,25 @@ const LoginPage = () => {
     const password = passwordRef.current?.value;
 
     if (!email || !password) {
-      setError("Invalid data");
+      setError("Please enter your email and password");
       return;
     }
 
-    const response = await fetch(`${BASE_URL}/users/login`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, password }),
-    });
+    setError("");
 
-    if (!response.ok) {
-      setError("Unable to login, please try different credentials.");
-      return;
+    try {
+      const { token } = await api.post<{ token: string }>(
+        "/auth/login",
+        { email, password },
+        { auth: false }
+      );
+      login(email, token);
+      navigate("/");
+    } catch (err) {
+      setError(
+        errorMessage(err, "Unable to login, please try different credentials.")
+      );
     }
-
-    const token = await response.json();
-    if (!token) {
-      setError("No data found");
-      return;
-    }
-
-    login(email, token);
-    navigate("/");
   };
 
   return (

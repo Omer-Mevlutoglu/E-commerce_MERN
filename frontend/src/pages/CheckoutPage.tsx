@@ -10,6 +10,7 @@ import {
 import { useCart } from "../context/Cart/CartContext";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/Auth/AuthContext";
+import { api, errorMessage } from "../api/client";
 import CreditCardIcon from "@mui/icons-material/CreditCard";
 import LockIcon from "@mui/icons-material/Lock";
 import { useRef } from "react";
@@ -21,13 +22,12 @@ import {
   isValidExpiry,
 } from "../utils/card";
 
-const BASE_URL = import.meta.env.VITE_BASE_URL;
-
 const CheckoutPage = () => {
   const theme = useTheme();
   const navigate = useNavigate();
   const { cartItem, totalAmount, showError, ClearCart } = useCart();
-  const { username, token } = useAuth();
+  // The API client attaches the token now.
+  const { username } = useAuth();
 
   const fullNameref = useRef<HTMLInputElement>(null);
   const addressref = useRef<HTMLInputElement>(null);
@@ -68,49 +68,31 @@ const CheckoutPage = () => {
         return;
       }
 
+      // Snapshotted before the cart is cleared, so the confirmation page can
+      // still show what was bought.
+      const purchasedItems = [...cartItem];
+      const purchasedTotal = totalAmount;
+
       // The card number, expiry and CVC stay in this browser. Only the last
       // four digits and the brand — both safe to persist — are sent onward.
-      const response = await fetch(`${BASE_URL}/cart/checkout`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          fullName,
-          address,
-          payment: { last4: getLast4(cardNumber), brand },
-        }),
+      const order = await api.post("/cart/checkout", {
+        fullName,
+        address,
+        payment: { last4: getLast4(cardNumber), brand },
       });
 
-      if (!response.ok) {
-        const errorData = await response
-          .json()
-          .catch(() => ({ message: "Payment processing failed" }));
-        throw new Error(
-          errorData.message || errorData.error || "Payment processing failed"
-        );
-      }
+      await ClearCart();
 
-      const orderData = await response.json();
-
-      // Clear cart immediately after successful checkout
-      ClearCart();
-
-      // Navigate with order data in state
       navigate("/order-confirmation", {
         state: {
-          order: orderData,
-          cartItems: [...cartItem], // Clone current cart items
-          totalAmount,
+          order,
+          cartItems: purchasedItems,
+          totalAmount: purchasedTotal,
         },
+        replace: true,
       });
     } catch (error) {
-      let errorMessage = "Payment failed. Please try again.";
-      if (error instanceof Error) {
-        errorMessage = error.message;
-      }
-      showError(errorMessage);
+      showError(errorMessage(error, "Payment failed. Please try again."));
     }
   };
 

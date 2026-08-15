@@ -31,16 +31,22 @@ export const IcartItemSchema = new Schema<IcartItem>({
 });
 
 // Define the schema for the cart
-export const IcartSchema = new Schema<Icart>({
-  userId: {
-    type: mongoose.Schema.Types.ObjectId, // Store reference to a user
-    ref: "users", // Refers to the users collection
-    required: true,
+export const IcartSchema = new Schema<Icart>(
+  {
+    userId: {
+      type: mongoose.Schema.Types.ObjectId, // Store reference to a user
+      ref: "users", // Refers to the users collection
+      required: true,
+    },
+    items: [IcartItemSchema], // Array of cart items
+    totalAmount: { type: Number, required: true }, // Total cost of cart
+    status: { type: String, enum: cartStatusEnum, default: "active" }, // Restrict status to valid values
   },
-  items: [IcartItemSchema], // Array of cart items
-  totalAmount: { type: Number, required: true }, // Total cost of cart
-  status: { type: String, enum: cartStatusEnum, default: "active" }, // Restrict status to valid values
-});
+  { timestamps: true }
+);
+
+// Every cart read is "the active cart for this user".
+IcartSchema.index({ userId: 1, status: 1 });
 
 // Create and export the cart model
 export const cartModel = mongoose.model<Icart>("Cart", IcartSchema);

@@ -2,6 +2,7 @@ import mongoose, { ClientSession } from "mongoose";
 import { cartModel, IcartItem } from "../models/cartModel";
 import productModel from "../models/productModel";
 import { IorderItem, orderModel } from "../models/orderModel";
+import { BadRequest, Conflict, NotFound } from "../utils/AppError";
 
 /** A stock decrement that has been applied and may need undoing. */
 interface ReservedLine {
@@ -15,7 +16,7 @@ let transactionSupport: boolean | null = null;
  * Multi-document transactions require a replica set or a sharded cluster; a
  * standalone mongod rejects them. Probed once and cached, so a developer
  * running a plain local mongod still gets a working checkout while production
- * (Atlas, or any replica set) gets full atomicity.
+ * (Atlas, or the replica set in docker-compose) gets full atomicity.
  */
 const transactionsSupported = async (): Promise<boolean> => {
   if (transactionSupport !== null) return transactionSupport;
@@ -45,11 +46,8 @@ interface CreateCartForUser {
 }
 
 // this function is used to create a cart for the user in thier first sign up
-
 const createCartForUser = async ({ userId }: CreateCartForUser) => {
-  const cart = await cartModel.create({ userId, totalAmount: 0 });
-  await cart.save();
-  return cart;
+  return cartModel.create({ userId, totalAmount: 0 });
 };
 
 interface GetActiveCartForUser {
@@ -57,10 +55,10 @@ interface GetActiveCartForUser {
   populateProduct?: boolean;
 }
 
-// this function checks if the user has an active cart or not
-// if the user have an active cart it returns it if not it creates one using the
-// createCartForUser function and retursn it all depends on the user id
-
+/**
+ * Returns the user's active cart, creating one if they have none, so no caller
+ * has to handle the "user has no cart yet" case.
+ */
 export const getActiveCartForUser = async ({
   userId,
   populateProduct,
@@ -81,65 +79,78 @@ export const getActiveCartForUser = async ({
   return cart;
 };
 
-// Define an interface to structure the function's parameters
+/** Reloads the cart with products populated — the shape every route returns. */
+const populatedCart = (userId: string) =>
+  getActiveCartForUser({ userId, populateProduct: true });
+
+const calculateCartTotalItems = ({ cartItems }: { cartItems: IcartItem[] }) =>
+  cartItems.reduce((sum, item) => sum + item.quantity * item.unitPrice, 0);
+
 interface AddItemToCart {
-  productId: any; // ID of the product being added
-  quantity: number; // Quantity of the product being added
-  userId: string; // ID of the user adding the item
+  productId: string;
+  quantity: number;
+  userId: string;
 }
 
-// Function to add an item to the user's shopping cart
+/**
+ * Adds a product to the cart, or increases the quantity if it is already there.
+ *
+ * Previously a duplicate add was rejected with "Item already exists in cart",
+ * which meant clicking Add to Cart twice produced an error rather than two
+ * items — the most visible flaw in the shop.
+ */
 export const addItemToCart = async ({
   productId,
   quantity,
   userId,
 }: AddItemToCart) => {
-  // Retrieve the active cart for the user
   const cart = await getActiveCartForUser({ userId });
 
-  // Check if the product is already in the cart
+  const product = await productModel.findOne({
+    _id: productId,
+    isActive: true,
+  });
+
+  if (!product) {
+    throw NotFound("Product not found", "ProductNotFound");
+  }
+
   const existInCart = cart.items.find(
     (p) => p.product.toString() === productId
   );
 
-  // If the product is already in the cart, return an error
+  const currentQuantity = existInCart?.quantity ?? 0;
+  const requestedTotal = currentQuantity + quantity;
+
+  if (product.stock < requestedTotal) {
+    throw Conflict(
+      currentQuantity > 0
+        ? `Only ${product.stock} in stock and you already have ${currentQuantity} in your cart`
+        : `Only ${product.stock} left in stock`,
+      "InsufficientStock"
+    );
+  }
+
   if (existInCart) {
-    return { data: "Item already exists in cart", statusCode: 400 };
+    existInCart.quantity = requestedTotal;
+  } else {
+    cart.items.push({
+      product: productId as unknown as IcartItem["product"],
+      unitPrice: product.price,
+      quantity,
+    });
   }
 
-  // Fetch the product from the database using its ID
-  const product = await productModel.findById(productId);
-
-  // If the product doesn't exist in the database, return an error
-  if (!product) {
-    return { data: "Product not found", statusCode: 400 };
-  }
-
-  // Check if there is enough stock to fulfill the requested quantity
-  if (product.stock < quantity) {
-    return { data: "Low stock", statusCode: 400 };
-  }
-
-  // Add the product to the cart if all checks pass
-  cart.items.push({ product: productId, unitPrice: product.price, quantity });
-
-  // Update the total cart amount by adding the price of the new product
-  cart.totalAmount += product.price * quantity;
-
-  // Save the updated cart back to the database
+  cart.totalAmount = calculateCartTotalItems({ cartItems: cart.items });
   await cart.save();
 
-  // Return the updated cart data with a success status
-  return {
-    data: await getActiveCartForUser({ userId, populateProduct: true }),
-    statusCode: 200,
-  };
+  return populatedCart(userId);
 };
 
 interface UpdateItemInCart {
-  productId: any; // ID of the product being added
-  quantity: number; // Quantity of the product being added
-  userId: string; // ID of the user adding the item
+  productId: string;
+  quantity: number;
+  userId: string;
 }
 
 export const updateItemInCart = async ({
@@ -149,89 +160,55 @@ export const updateItemInCart = async ({
 }: UpdateItemInCart) => {
   const cart = await getActiveCartForUser({ userId });
 
-  // Check if the product is already in the cart
   const existInCart = cart.items.find(
     (p) => p.product.toString() === productId
   );
 
   if (!existInCart) {
-    return { data: "Item is not in cart", statusCode: 400 };
+    throw NotFound("That item is not in your cart", "ItemNotInCart");
   }
 
   const product = await productModel.findById(productId);
 
-  // If the product doesn't exist in the database, return an error
   if (!product) {
-    return { data: "Product not found", statusCode: 400 };
+    throw NotFound("Product not found", "ProductNotFound");
   }
 
-  // Check if there is enough stock to fulfill the requested quantity
   if (product.stock < quantity) {
-    return { data: "Low stock", statusCode: 400 };
+    throw Conflict(`Only ${product.stock} left in stock`, "InsufficientStock");
   }
 
-  // calculate the total amount of the items that are already in the cart
-
-  const otherItemsInCart = cart.items.filter(
-    (p) => p.product.toString() !== productId
-  );
-
-  let total = calculateCartTotalItems({ cartItems: otherItemsInCart });
-
-  // add the new updated product to the total
   existInCart.quantity = quantity;
-
-  total += existInCart.quantity * existInCart.unitPrice;
-  cart.totalAmount = total;
+  cart.totalAmount = calculateCartTotalItems({ cartItems: cart.items });
   await cart.save();
 
-  return {
-    data: await getActiveCartForUser({ userId, populateProduct: true }),
-    statusCode: 200,
-  };
+  return populatedCart(userId);
 };
 
 interface DeleteItemInCart {
-  productId: any; // ID of the product being added
-  userId: string; // ID of the user adding the item
+  productId: string;
+  userId: string;
 }
+
 export const deleteItemInCart = async ({
   userId,
   productId,
 }: DeleteItemInCart) => {
   const cart = await getActiveCartForUser({ userId });
 
-  // Check if the product is already in the cart
   const existInCart = cart.items.find(
     (p) => p.product.toString() === productId
   );
 
   if (!existInCart) {
-    return { data: "Item is not in cart", statusCode: 400 };
+    throw NotFound("That item is not in your cart", "ItemNotInCart");
   }
 
-  const otherItemsInCart = cart.items.filter(
-    (p) => p.product.toString() !== productId
-  );
-  const total = calculateCartTotalItems({ cartItems: otherItemsInCart });
-
-  cart.items = otherItemsInCart;
-  cart.totalAmount = total;
+  cart.items = cart.items.filter((p) => p.product.toString() !== productId);
+  cart.totalAmount = calculateCartTotalItems({ cartItems: cart.items });
   await cart.save();
 
-  return {
-    data: await getActiveCartForUser({ userId, populateProduct: true }),
-    statusCode: 200,
-  };
-};
-
-const calculateCartTotalItems = ({ cartItems }: { cartItems: IcartItem[] }) => {
-  const total = cartItems.reduce((sum, product) => {
-    sum += product.quantity * product.unitPrice;
-    return sum;
-  }, 0);
-
-  return total;
+  return populatedCart(userId);
 };
 
 interface ClearCart {
@@ -242,21 +219,10 @@ export const clearCart = async ({ userId }: ClearCart) => {
   const cart = await getActiveCartForUser({ userId });
   cart.items = [];
   cart.totalAmount = 0;
-
   await cart.save();
 
-  return {
-    data: await getActiveCartForUser({ userId, populateProduct: true }),
-    statusCode: 200,
-  };
+  return populatedCart(userId);
 };
-
-interface CheckOut {
-  userId: string;
-  address: string;
-  fullName: string;
-  payment?: { last4?: string; brand?: string };
-}
 
 /**
  * Reserves stock for every cart line and builds the order line items.
@@ -270,17 +236,15 @@ interface CheckOut {
  * longer matches and it gets back null. Checking `stock` and then writing it
  * as two separate operations would let both pass the check.
  *
- * Returns the built line items, or the id of the product that ran out.
+ * Applied reservations are pushed onto `reserved` so the non-transactional
+ * path can undo them if a later step fails.
  */
 const reserveStockAndBuildItems = async (
   items: IcartItem[],
+  reserved: ReservedLine[],
   session?: ClientSession
-): Promise<
-  | { ok: true; orderItems: IorderItem[]; reserved: ReservedLine[] }
-  | { ok: false; reason: string; reserved: ReservedLine[] }
-> => {
+): Promise<IorderItem[]> => {
   const orderItems: IorderItem[] = [];
-  const reserved: ReservedLine[] = [];
 
   for (const item of items) {
     const updated = await productModel.findOneAndUpdate(
@@ -290,32 +254,31 @@ const reserveStockAndBuildItems = async (
     );
 
     if (!updated) {
-      // Either the product was deleted, or another order took the last units
+      // Either the product was retired, or another order took the last units
       // between adding to the cart and checking out.
       const stillExists = await productModel
         .findById(item.product)
         .session(session ?? null);
 
-      return {
-        ok: false,
-        reserved,
-        reason: stillExists
+      throw Conflict(
+        stillExists
           ? `Not enough stock for "${stillExists.title}" (${stillExists.stock} left, ${item.quantity} requested)`
           : "A product in your cart is no longer available",
-      };
+        "InsufficientStock"
+      );
     }
 
     reserved.push({ productId: item.product, quantity: item.quantity });
 
     orderItems.push({
-      productTtile: updated.title,
+      productTitle: updated.title,
       productImage: updated.image,
-      unitprice: item.unitPrice,
+      unitPrice: item.unitPrice,
       quantity: item.quantity,
     });
   }
 
-  return { ok: true, orderItems, reserved };
+  return orderItems;
 };
 
 /** Gives back stock that was reserved before a later step failed. */
@@ -328,6 +291,13 @@ const releaseStock = async (reserved: ReservedLine[]) => {
   }
 };
 
+interface CheckOut {
+  userId: string;
+  address: string;
+  fullName: string;
+  payment?: { last4?: string; brand?: string };
+}
+
 export const checkOut = async ({
   userId,
   address,
@@ -338,24 +308,22 @@ export const checkOut = async ({
 
   // An empty cart previously produced a valid $0 order with no line items.
   if (cart.items.length === 0) {
-    return { data: "Your cart is empty", statusCode: 400 };
+    throw BadRequest("Your cart is empty", "EmptyCart");
   }
-
-  const paymentRecord = {
-    method: "mock" as const,
-    // A real gateway sets this from a webhook. The mock provider settles
-    // immediately, which keeps the field honest about what it represents.
-    status: "paid" as const,
-    last4: payment?.last4,
-    brand: payment?.brand,
-  };
 
   const buildOrder = (orderItems: IorderItem[]) => ({
     orderItems,
     total: cart.totalAmount,
     address,
     fullName,
-    payment: paymentRecord,
+    payment: {
+      method: "mock" as const,
+      // A real gateway sets this from a webhook. The mock provider settles
+      // immediately, which keeps the field honest about what it represents.
+      status: "paid" as const,
+      last4: payment?.last4,
+      brand: payment?.brand,
+    },
     userId,
   });
 
@@ -363,33 +331,28 @@ export const checkOut = async ({
   if (await transactionsSupported()) {
     const session = await mongoose.startSession();
     try {
-      let result: { data: any; statusCode: number } | undefined;
+      let order;
 
+      // A throw inside the callback aborts the transaction, rolling back every
+      // decrement, then propagates to the error handler.
       await session.withTransaction(async () => {
-        const reservation = await reserveStockAndBuildItems(
+        const orderItems = await reserveStockAndBuildItems(
           cart.items,
+          [],
           session
         );
 
-        if (!reservation.ok) {
-          result = { data: reservation.reason, statusCode: 409 };
-          // Aborting rolls back every decrement made inside this transaction.
-          await session.abortTransaction();
-          return;
-        }
-
-        const [order] = await orderModel.create(
-          [buildOrder(reservation.orderItems)],
-          { session }
-        );
+        const [created] = await orderModel.create([buildOrder(orderItems)], {
+          session,
+        });
 
         cart.status = "completed";
         await cart.save({ session });
 
-        result = { data: order, statusCode: 200 };
+        order = created;
       });
 
-      return result ?? { data: "Checkout failed", statusCode: 500 };
+      return order;
     } finally {
       await session.endSession();
     }
@@ -397,24 +360,20 @@ export const checkOut = async ({
 
   // ── Fallback: standalone mongod has no transactions ─────────────────────
   // Each stock decrement is still atomic on its own, so overselling remains
-  // impossible. What we lose is all-or-nothing across documents, so we undo
-  // the reservations by hand if a later write fails.
-  const reservation = await reserveStockAndBuildItems(cart.items);
-
-  if (!reservation.ok) {
-    await releaseStock(reservation.reserved);
-    return { data: reservation.reason, statusCode: 409 };
-  }
+  // impossible. What we lose is all-or-nothing across documents, so the
+  // reservations are undone by hand if a later write fails.
+  const reserved: ReservedLine[] = [];
 
   try {
-    const order = await orderModel.create(buildOrder(reservation.orderItems));
+    const orderItems = await reserveStockAndBuildItems(cart.items, reserved);
+    const order = await orderModel.create(buildOrder(orderItems));
 
     cart.status = "completed";
     await cart.save();
 
-    return { data: order, statusCode: 200 };
+    return order;
   } catch (err) {
-    await releaseStock(reservation.reserved);
+    await releaseStock(reserved);
     throw err;
   }
 };

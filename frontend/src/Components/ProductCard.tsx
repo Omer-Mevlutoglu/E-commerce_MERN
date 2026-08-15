@@ -12,10 +12,17 @@ interface Props {
   _id: string;
   title: string;
   image: string;
-  price: string;
+  price: number;
+  stock?: number;
 }
 
-export default function ProductCard({ _id, title, image, price }: Props) {
+export default function ProductCard({
+  _id,
+  title,
+  image,
+  price,
+  stock,
+}: Props) {
   const { addItemToCart } = useCart();
   const { isAuthenticated } = useAuth();
 
@@ -85,14 +92,33 @@ export default function ProductCard({ _id, title, image, price }: Props) {
               fontSize: "1.25rem",
             }}
           >
-            ${price}
+            ${price.toFixed(2)}
           </Typography>
+
+          {/* Stock was already on every product but never surfaced. */}
+          {stock !== undefined && stock <= 5 && (
+            <Typography
+              variant="body2"
+              sx={{
+                fontWeight: 600,
+                color: stock === 0 ? "error.main" : "warning.main",
+              }}
+            >
+              {stock === 0 ? "Out of stock" : `Only ${stock} left`}
+            </Typography>
+          )}
         </Box>
       </CardContent>
 
       <CardActions sx={{ px: 2.5, pb: 2.5 }}>
         <Tooltip
-          title={!isAuthenticated ? "Please login to add items to cart" : ""}
+          title={
+            !isAuthenticated
+              ? "Please login to add items to cart"
+              : stock === 0
+              ? "This product is out of stock"
+              : ""
+          }
           placement="top"
           arrow
         >
@@ -102,7 +128,7 @@ export default function ProductCard({ _id, title, image, price }: Props) {
               variant="contained"
               color="primary"
               onClick={() => addItemToCart(_id)}
-              disabled={!isAuthenticated}
+              disabled={!isAuthenticated || stock === 0}
               sx={{
                 py: 1.2,
                 borderRadius: 2,
@@ -123,7 +149,11 @@ export default function ProductCard({ _id, title, image, price }: Props) {
                 transition: "all 0.2s ease",
               }}
             >
-              {isAuthenticated ? "Add to Cart" : "Login to Purchase"}
+              {!isAuthenticated
+                ? "Login to Purchase"
+                : stock === 0
+                ? "Out of Stock"
+                : "Add to Cart"}
             </Button>
           </span>
         </Tooltip>

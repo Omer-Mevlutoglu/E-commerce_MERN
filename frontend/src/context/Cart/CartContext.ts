@@ -5,11 +5,9 @@ interface CartContextType {
   cartItem: CartItem[];
   totalAmount: number;
   addItemToCart: (productId: string) => void;
-  updateItemInCart: (
-    productId: string,
-    quantity: number,
-    stock: number
-  ) => void;
+  // `stock` was previously passed in and sent to the server, which ignored it —
+  // stock is authoritative on the server, never something the client asserts.
+  updateItemInCart: (productId: string, quantity: number) => void;
   DeleteItemInCart: (productId: string) => void;
   ClearCart: () => void;
   showError: (message: string) => void;

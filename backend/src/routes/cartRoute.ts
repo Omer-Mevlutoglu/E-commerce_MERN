@@ -16,6 +16,7 @@ import {
   checkoutSchema,
 } from "../schemas/cart.schema";
 import { productIdParamSchema } from "../schemas/common.schema";
+import { asyncHandler } from "../utils/asyncHandler";
 import { ExtenedRequest } from "../types/extendedRequest";
 
 const router = express.Router();
@@ -24,86 +25,79 @@ const router = express.Router();
 // because validateJWT alone does not look at the role.
 router.use(validateJWT, requireUser);
 
-router.get("/", async (req: ExtenedRequest, res) => {
-  try {
-    const userId = req.user._id;
+router.get(
+  "/",
+  asyncHandler(async (req: ExtenedRequest, res) => {
     const cart = await getActiveCartForUser({
-      userId,
+      userId: req.user._id,
       populateProduct: true,
     });
-    res.status(200).send(cart);
-  } catch (error) {
-    console.error("[cart] GET / failed", error);
-    res.status(500).send("Something went wrong");
-  }
-});
+    res.status(200).json(cart);
+  })
+);
 
-router.post("/items", validate(addItemSchema), async (req: ExtenedRequest, res) => {
-  try {
-    const userId = req?.user?._id;
+router.post(
+  "/items",
+  validate(addItemSchema),
+  asyncHandler(async (req: ExtenedRequest, res) => {
     const { productId, quantity } = req.body;
-    const response = await addItemToCart({ productId, quantity, userId });
-    res.status(response.statusCode).send(response.data);
-  } catch (error) {
-    console.error("[cart] POST /items failed", error);
-    res.status(500).send("Something went wrong");
-  }
-});
+    const cart = await addItemToCart({
+      productId,
+      quantity,
+      userId: req.user._id,
+    });
+    res.status(200).json(cart);
+  })
+);
 
-router.put("/items", validate(updateItemSchema), async (req: ExtenedRequest, res) => {
-  try {
-    const userId = req?.user?._id;
+router.put(
+  "/items",
+  validate(updateItemSchema),
+  asyncHandler(async (req: ExtenedRequest, res) => {
     const { productId, quantity } = req.body;
-    const response = await updateItemInCart({ productId, quantity, userId });
-    res.status(response.statusCode).send(response.data);
-  } catch (error) {
-    console.error("[cart] PUT /items failed", error);
-    res.status(500).send("Something went wrong");
-  }
-});
+    const cart = await updateItemInCart({
+      productId,
+      quantity,
+      userId: req.user._id,
+    });
+    res.status(200).json(cart);
+  })
+);
 
 router.delete(
   "/items/:productId",
   validate(productIdParamSchema, "params"),
-  async (req: ExtenedRequest, res) => {
-    try {
-      const userId = req?.user?._id;
-      const { productId } = req.params;
-      const response = await deleteItemInCart({ productId, userId });
-      res.status(response.statusCode).send(response.data);
-    } catch (error) {
-      console.error("[cart] DELETE /items/:productId failed", error);
-      res.status(500).send("Something went wrong");
-    }
-  }
+  asyncHandler(async (req: ExtenedRequest, res) => {
+    const cart = await deleteItemInCart({
+      productId: req.params.productId,
+      userId: req.user._id,
+    });
+    res.status(200).json(cart);
+  })
 );
 
-router.delete("/", async (req: ExtenedRequest, res) => {
-  try {
-    const userId = req?.user?._id;
-    const response = await clearCart({ userId });
-    res.status(response.statusCode).send(response.data);
-  } catch (error) {
-    console.error("[cart] DELETE / failed", error);
-    res.status(500).send("Something went wrong");
-  }
-});
+router.delete(
+  "/",
+  asyncHandler(async (req: ExtenedRequest, res) => {
+    const cart = await clearCart({ userId: req.user._id });
+    res.status(200).json(cart);
+  })
+);
 
 router.post(
   "/checkout",
   validate(checkoutSchema),
-  async (req: ExtenedRequest, res) => {
-    try {
-      const userId = req?.user?._id;
-      // No card number, CVC or expiry: the browser keeps those.
-      const { address, fullName, payment } = req.body;
-      const response = await checkOut({ userId, address, fullName, payment });
-      res.status(response.statusCode).send(response.data);
-    } catch (error) {
-      console.error("[cart] POST /checkout failed", error);
-      res.status(500).send("Something went wrong");
-    }
-  }
+  asyncHandler(async (req: ExtenedRequest, res) => {
+    // No card number, CVC or expiry: the browser keeps those.
+    const { address, fullName, payment } = req.body;
+    const order = await checkOut({
+      userId: req.user._id,
+      address,
+      fullName,
+      payment,
+    });
+    res.status(201).json(order);
+  })
 );
 
 export default router;

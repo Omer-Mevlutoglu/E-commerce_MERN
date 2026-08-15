@@ -1,10 +1,24 @@
-import { FC, PropsWithChildren, useEffect, useState } from "react";
+import { FC, PropsWithChildren, useCallback, useEffect, useState } from "react";
 import { CartContext } from "./CartContext";
 import { CartItem } from "../../types/CartItem";
 import { useAuth } from "../Auth/AuthContext";
 import { Alert, Snackbar } from "@mui/material";
+import { api, errorMessage } from "../../api/client";
 
-const BASE_URL = import.meta.env.VITE_BASE_URL;
+interface ServerCart {
+  items: {
+    product: {
+      _id: string;
+      image: string;
+      title: string;
+      price: number;
+      stock: number;
+    } | null;
+    unitPrice: number;
+    quantity: number;
+  }[];
+  totalAmount: number;
+}
 
 const CartProvider: FC<PropsWithChildren> = ({ children }) => {
   const [cartItem, setCartItem] = useState<CartItem[]>([]);
@@ -21,143 +35,93 @@ const CartProvider: FC<PropsWithChildren> = ({ children }) => {
     setOpen(false);
   };
 
-  // Helper function to map raw cart items to our CartItem type
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const mapCartItems = (items: any[]): CartItem[] =>
-    items.map(({ product, quantity }) => ({
-      productId: product._id,
-      image: product.image,
-      title: product.title,
-      quantity,
-      unitPrice: product.price,
-      stock: product.stock,
-    }));
-
-  const showError = (message: string) => {
+  const showError = useCallback((message: string) => {
     setError(message);
     setOpen(true);
-  };
+  }, []);
+
+  /**
+   * Flattens the server's populated cart.
+   *
+   * `unitPrice` comes from the cart line, not from `product.price`. The line
+   * price is snapshotted when the item is added, and the server's totalAmount
+   * is computed from it — reading the live product price here made the line
+   * items and the total disagree whenever an admin changed a price.
+   *
+   * A null product means it was retired after being added, so it is dropped.
+   */
+  const mapCartItems = (cart: ServerCart): CartItem[] =>
+    cart.items
+      .filter((item) => item.product !== null)
+      .map(({ product, quantity, unitPrice }) => ({
+        productId: product!._id,
+        image: product!.image,
+        title: product!.title,
+        quantity,
+        unitPrice,
+        stock: product!.stock,
+      }));
+
+  const applyCart = useCallback((cart: ServerCart) => {
+    setCartItem(mapCartItems(cart));
+    setTotalAmount(cart.totalAmount);
+  }, []);
 
   useEffect(() => {
-    if (!token || isAdmin) return;
+    // Logging out (or signing in as an admin) must clear the cart. Previously
+    // this returned early without resetting, so the navbar badge kept showing
+    // the previous user's item count until a full page reload.
+    if (!token || isAdmin) {
+      setCartItem([]);
+      setTotalAmount(0);
+      return;
+    }
 
-    const fetchCart = async () => {
+    let cancelled = false;
+
+    (async () => {
       try {
-        const response = await fetch(`${BASE_URL}/cart`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        if (!response.ok)
-          throw new Error("Failed to get user cart. Try again.");
-        const data = await response.json();
-        setCartItem(mapCartItems(data.items));
-        setTotalAmount(data.totalAmount);
-      } catch {
-        showError("Failed to get cart data");
+        const cart = await api.get<ServerCart>("/cart");
+        if (!cancelled) applyCart(cart);
+      } catch (err) {
+        if (!cancelled) showError(errorMessage(err, "Failed to get cart data"));
       }
-    };
+    })();
 
-    fetchCart();
-  }, [token, isAdmin]);
+    return () => {
+      cancelled = true;
+    };
+  }, [token, isAdmin, applyCart, showError]);
 
   const addItemToCart = async (productId: string) => {
     try {
-      const response = await fetch(`${BASE_URL}/cart/items`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ productId, quantity: 1 }),
-      });
-      if (!response.ok) {
-        showError(
-          "Item already exists in cart or an error has occurred. Check your cart."
-        );
-        return;
-      }
-      const cart = await response.json();
-      if (!cart) {
-        showError("No cart for this user");
-        return;
-      }
-      setCartItem(mapCartItems(cart.items));
-      setTotalAmount(cart.totalAmount);
-    } catch {
-      showError("Item already exists in cart");
+      applyCart(await api.post<ServerCart>("/cart/items", { productId, quantity: 1 }));
+    } catch (err) {
+      showError(errorMessage(err, "Could not add that item to your cart"));
     }
   };
 
-  const updateItemInCart = async (
-    productId: string,
-    quantity: number,
-    stock: number
-  ) => {
+  const updateItemInCart = async (productId: string, quantity: number) => {
     try {
-      const response = await fetch(`${BASE_URL}/cart/items`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ productId, quantity, stock }),
-      });
-      if (!response.ok) {
-        showError("Server error");
-        return;
-      }
-      const cart = await response.json();
-      if (!cart) {
-        showError("No cart for this user");
-        return;
-      }
-      setCartItem(mapCartItems(cart.items));
-      setTotalAmount(cart.totalAmount);
-    } catch {
-      showError("Can't change the quantity");
+      applyCart(await api.put<ServerCart>("/cart/items", { productId, quantity }));
+    } catch (err) {
+      showError(errorMessage(err, "Could not change the quantity"));
     }
   };
 
   const DeleteItemInCart = async (productId: string) => {
     try {
-      const response = await fetch(`${BASE_URL}/cart/items/${productId}`, {
-        method: "DELETE",
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (!response.ok) {
-        showError("Failed to delete the item.");
-        return;
-      }
-      const cart = await response.json();
-      if (!cart) {
-        showError("No cart data available.");
-        return;
-      }
-      setCartItem(mapCartItems(cart.items));
-      setTotalAmount(cart.totalAmount);
-    } catch {
-      showError("An error occurred while deleting the item.");
+      applyCart(await api.delete<ServerCart>(`/cart/items/${productId}`));
+    } catch (err) {
+      showError(errorMessage(err, "Failed to remove the item"));
     }
   };
 
   const ClearCart = async () => {
     try {
-      const response = await fetch(`${BASE_URL}/cart`, {
-        method: "DELETE",
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (!response.ok) {
-        showError("Failed to clear cart.");
-        return;
-      }
-      const cart = await response.json();
-      if (!cart) {
-        showError("No cart data available.");
-        return;
-      }
-      setCartItem([]);
-      setTotalAmount(0);
-    } catch {
-      showError("An error occurred while clearing the cart.");
+      applyCart(await api.delete<ServerCart>("/cart"));
+    } catch (err) {
+      showError(errorMessage(err, "Failed to clear the cart"));
     }
   };
 
@@ -178,7 +142,7 @@ const CartProvider: FC<PropsWithChildren> = ({ children }) => {
       </CartContext.Provider>
       <Snackbar
         open={open}
-        autoHideDuration={3000}
+        autoHideDuration={4000}
         onClose={handleClose}
         anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
       >
