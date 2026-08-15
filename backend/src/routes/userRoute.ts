@@ -2,10 +2,12 @@ import express from "express";
 import { getMyOrders, login, register } from "../services/userServices";
 import { ExtenedRequest } from "../types/extendedRequest";
 import validateJWT from "../middlewares/validateJWT";
+import { validate } from "../middlewares/validate";
+import { registerSchema, loginSchema } from "../schemas/user.schema";
 
 const router = express.Router();
 
-router.post("/register", async (request, response) => {
+router.post("/register", validate(registerSchema), async (request, response) => {
   try {
     const { firstName, lastName, email, password } = request.body;
     const result = await register({ firstName, lastName, email, password });
@@ -15,7 +17,7 @@ router.post("/register", async (request, response) => {
   }
 });
 
-router.post("/login", async (request, response) => {
+router.post("/login", validate(loginSchema), async (request, response) => {
   try {
     const { email, password } = request.body;
     const result = await login({ email, password });

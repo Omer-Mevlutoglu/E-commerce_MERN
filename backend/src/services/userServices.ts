@@ -4,6 +4,7 @@ import jwt from "jsonwebtoken";
 import bcrypt from "bcrypt";
 import { orderModel } from "../models/orderModel";
 import { IUser } from "../models/userModel"; // If you have an IUser interface
+import { env } from "../config/env";
 
 // 1) Define the shape of the JWT payload we intend to sign
 interface JWTPayload {
@@ -15,9 +16,9 @@ interface JWTPayload {
 
 // 2) Helper to generate a JWT including the `role` field
 const generateJwt = (data: JWTPayload): string => {
-  // You can add options (expiresIn, issuer, etc.) if desired
-  return jwt.sign(data, process.env.JWT_SECRET || "", {
-    expiresIn: "7d",
+  // env.JWT_SECRET is validated at boot, so there is no empty-string fallback.
+  return jwt.sign(data, env.JWT_SECRET, {
+    expiresIn: env.JWT_EXPIRES_IN as jwt.SignOptions["expiresIn"],
   });
 };
 
@@ -75,8 +76,10 @@ export const login = async ({
   email,
   password,
 }: loginParams): Promise<{ data: string; statusCode: number }> => {
-  // 1) Find user by email
-  const findUser = await userModel.findOne({ email });
+  // 1) Find user by email.
+  //    The password hash is select:false on the schema, so it must be
+  //    explicitly requested here — this is the only place that needs it.
+  const findUser = await userModel.findOne({ email }).select("+password");
   if (!findUser) {
     return { data: "Incorrect email or password", statusCode: 400 };
   }
@@ -106,7 +109,7 @@ export const getMyOrders = async ({
   userId,
 }: getOrdersParams): Promise<{ data: any[]; statusCode: number }> => {
   try {
-    const orders = await orderModel.find({ userId });
+    const orders = await orderModel.find({ userId }).sort({ createdAt: -1 });
     return { data: orders, statusCode: 200 };
   } catch (err) {
     throw err;

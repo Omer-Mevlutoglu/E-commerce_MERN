@@ -13,6 +13,13 @@ import { useAuth } from "../context/Auth/AuthContext";
 import CreditCardIcon from "@mui/icons-material/CreditCard";
 import LockIcon from "@mui/icons-material/Lock";
 import { useRef } from "react";
+import {
+  detectCardBrand,
+  getLast4,
+  isValidCardNumber,
+  isValidCvc,
+  isValidExpiry,
+} from "../utils/card";
 
 const BASE_URL = import.meta.env.VITE_BASE_URL;
 
@@ -42,18 +49,47 @@ const CheckoutPage = () => {
         return;
       }
 
+      const brand = detectCardBrand(cardNumber);
+
+      if (!isValidCardNumber(cardNumber)) {
+        showError("Please enter a valid card number");
+        return;
+      }
+      if (!isValidExpiry(exp)) {
+        showError("Please enter a valid expiry date (MM/YY)");
+        return;
+      }
+      if (!isValidCvc(cvc, brand)) {
+        showError(
+          brand === "amex"
+            ? "American Express security codes are 4 digits"
+            : "Please enter a valid 3-digit security code"
+        );
+        return;
+      }
+
+      // The card number, expiry and CVC stay in this browser. Only the last
+      // four digits and the brand — both safe to persist — are sent onward.
       const response = await fetch(`${BASE_URL}/cart/checkout`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ fullName, address, cardNumber, cvc, exp }),
+        body: JSON.stringify({
+          fullName,
+          address,
+          payment: { last4: getLast4(cardNumber), brand },
+        }),
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || "Payment processing failed");
+        const errorData = await response
+          .json()
+          .catch(() => ({ message: "Payment processing failed" }));
+        throw new Error(
+          errorData.message || errorData.error || "Payment processing failed"
+        );
       }
 
       const orderData = await response.json();

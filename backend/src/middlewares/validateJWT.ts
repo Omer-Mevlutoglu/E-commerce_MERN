@@ -1,54 +1,79 @@
-import { Request, Response, NextFunction } from "express";
+import { Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
 import userModel from "../models/userModel";
 import { ExtenedRequest } from "../types/extendedRequest";
+import { env } from "../config/env";
 
-const validateJWT = (
+/**
+ * Verifies the bearer token and attaches the corresponding user to the request.
+ *
+ * Every authentication failure returns 401 (not authenticated). 403 is reserved
+ * for the authorization middlewares, which answer a different question:
+ * "you are who you say you are, but you may not do this".
+ */
+const validateJWT = async (
   req: ExtenedRequest,
   res: Response,
   next: NextFunction
-) => {
+): Promise<void> => {
   const authorizationHeader = req.get("authorization");
 
-  //   if authorization header not found reurn
-
   if (!authorizationHeader) {
-    res.status(403).send("No authorization header was found");
+    res
+      .status(401)
+      .json({ error: "Unauthorized", message: "Authorization header missing" });
     return;
   }
 
-  //   authorization header found? get me the token
-  const token = authorizationHeader.split(" ")[1];
+  const [scheme, token] = authorizationHeader.split(" ");
 
-  if (!token) {
-    res.status(403).send("The token was notnfound");
+  if (scheme?.toLowerCase() !== "bearer" || !token) {
+    res.status(401).json({
+      error: "Unauthorized",
+      message: "Expected an 'Bearer <token>' authorization header",
+    });
     return;
   }
 
-  jwt.verify(token, process.env.JWT_SECRET || "", async (err, payload) => {
-    if (err) {
-      res.status(403).send("Invalid token");
+  let payload: jwt.JwtPayload;
+
+  try {
+    payload = jwt.verify(token, env.JWT_SECRET) as jwt.JwtPayload;
+  } catch (err) {
+    const expired = err instanceof jwt.TokenExpiredError;
+    res.status(401).json({
+      error: expired ? "TokenExpired" : "InvalidToken",
+      message: expired ? "Session expired, please log in again" : "Invalid token",
+    });
+    return;
+  }
+
+  if (!payload?.email) {
+    res
+      .status(401)
+      .json({ error: "InvalidToken", message: "Invalid token payload" });
+    return;
+  }
+
+  try {
+    const user = await userModel.findOne({ email: payload.email });
+
+    // The token is well-formed but the account behind it is gone (deleted, or
+    // the email changed). Previously this fell through with req.user = null and
+    // surfaced as a 500 from whichever handler dereferenced it.
+    if (!user) {
+      res.status(401).json({
+        error: "Unauthorized",
+        message: "The account for this token no longer exists",
+      });
       return;
     }
 
-    // check if the payload is valid
-    if (!payload) {
-      res.status(403).send("Invalid token payload");
-      return;
-    }
-    // if there is no errors fetch user from the database based on the payload
-    // specify the type of email
-    const userPayload = payload as {
-      email: string;
-      firstName: string;
-      lastName: string;
-    };
-
-    const user = await userModel.findOne({ email: userPayload.email });
     req.user = user;
-
     next();
-  });
+  } catch (err) {
+    next(err);
+  }
 };
 
 export default validateJWT;

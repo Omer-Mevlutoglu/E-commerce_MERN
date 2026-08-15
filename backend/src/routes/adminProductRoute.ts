@@ -4,6 +4,12 @@ import { Request, Response, NextFunction } from "express";
 
 import validateJWT from "../middlewares/validateJWT";
 import requireAdmin from "../middlewares/requireAdmin";
+import { validate } from "../middlewares/validate";
+import {
+  createProductSchema,
+  updateProductSchema,
+} from "../schemas/product.schema";
+import { productIdParamSchema } from "../schemas/common.schema";
 import {
   createProduct,
   updateProduct,
@@ -14,7 +20,7 @@ import {
 const router = express.Router();
 router.use(validateJWT, requireAdmin);
 // 1) Create a new product
-router.post("/", async (req: Request, res: Response) => {
+router.post("/", validate(createProductSchema), async (req: Request, res: Response) => {
   try {
     const { title, image, price, stock } = req.body;
     const newProd = await createProduct({ title, image, price, stock });
@@ -26,28 +32,37 @@ router.post("/", async (req: Request, res: Response) => {
 });
 
 // 2) Update an existing product
-router.put("/:productId", async (req: Request, res: Response) => {
-  try {
-    const { productId } = req.params;
-    const updates = req.body; // e.g. { title, price, stock, ... }
-    const updatedProd = await updateProduct(productId, updates);
-     res.status(200).json(updatedProd);
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "Could not create product" });
+router.put(
+  "/:productId",
+  validate(productIdParamSchema, "params"),
+  validate(updateProductSchema),
+  async (req: Request, res: Response) => {
+    try {
+      const { productId } = req.params;
+      const updates = req.body; // e.g. { title, price, stock, ... }
+      const updatedProd = await updateProduct(productId, updates);
+      res.status(200).json(updatedProd);
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ error: "Could not update product" });
+    }
   }
-});
+);
 
 // 3) Delete a product
-router.delete("/:productId", async (req, res) => {
-  try {
-    const { productId } = req.params;
-    await deleteProduct(productId);
-     res.status(200).send("Product deleted");
-  } catch (err) {
-    console.error(err);
-     res.status(500).send("Couldn't delete product");
+router.delete(
+  "/:productId",
+  validate(productIdParamSchema, "params"),
+  async (req, res) => {
+    try {
+      const { productId } = req.params;
+      await deleteProduct(productId);
+      res.status(200).send("Product deleted");
+    } catch (err) {
+      console.error(err);
+      res.status(500).send("Couldn't delete product");
+    }
   }
-});
+);
 
 export default router;

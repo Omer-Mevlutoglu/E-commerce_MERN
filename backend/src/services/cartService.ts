@@ -1,6 +1,44 @@
+import mongoose, { ClientSession } from "mongoose";
 import { cartModel, Icart, IcartItem } from "../models/cartModel";
 import productModel from "../models/productModel";
 import { IorderItem, orderModel } from "../models/orderModel";
+
+/** A stock decrement that has been applied and may need undoing. */
+interface ReservedLine {
+  productId: unknown;
+  quantity: number;
+}
+
+let transactionSupport: boolean | null = null;
+
+/**
+ * Multi-document transactions require a replica set or a sharded cluster; a
+ * standalone mongod rejects them. Probed once and cached, so a developer
+ * running a plain local mongod still gets a working checkout while production
+ * (Atlas, or any replica set) gets full atomicity.
+ */
+const transactionsSupported = async (): Promise<boolean> => {
+  if (transactionSupport !== null) return transactionSupport;
+
+  try {
+    const admin = mongoose.connection.db?.admin();
+    const info = await admin?.command({ hello: 1 });
+    // `setName` => replica set member, `msg: "isdbgrid"` => mongos.
+    transactionSupport = Boolean(info?.setName || info?.msg === "isdbgrid");
+  } catch {
+    transactionSupport = false;
+  }
+
+  if (!transactionSupport) {
+    console.warn(
+      "[cart] MongoDB deployment does not support transactions " +
+        "(standalone server). Checkout will use compensating writes instead. " +
+        "Use a replica set or MongoDB Atlas for full atomicity."
+    );
+  }
+
+  return transactionSupport;
+};
 
 interface CreateCartForUser {
   userId: string;
@@ -217,104 +255,166 @@ interface CheckOut {
   userId: string;
   address: string;
   fullName: string;
-  cvc: string;
-  exp: string;
-  cardNumber: string;
+  payment?: { last4?: string; brand?: string };
 }
+
+/**
+ * Reserves stock for every cart line and builds the order line items.
+ *
+ * The decrement is a single conditional update per product:
+ *
+ *   findOneAndUpdate({ _id, stock: { $gte: qty } }, { $inc: { stock: -qty } })
+ *
+ * MongoDB applies the filter and the update atomically, so two concurrent
+ * checkouts for the last unit cannot both succeed — the loser's filter no
+ * longer matches and it gets back null. Checking `stock` and then writing it
+ * as two separate operations would let both pass the check.
+ *
+ * Returns the built line items, or the id of the product that ran out.
+ */
+const reserveStockAndBuildItems = async (
+  items: IcartItem[],
+  session?: ClientSession
+): Promise<
+  | { ok: true; orderItems: IorderItem[]; reserved: ReservedLine[] }
+  | { ok: false; reason: string; reserved: ReservedLine[] }
+> => {
+  const orderItems: IorderItem[] = [];
+  const reserved: ReservedLine[] = [];
+
+  for (const item of items) {
+    const updated = await productModel.findOneAndUpdate(
+      { _id: item.product, stock: { $gte: item.quantity } },
+      { $inc: { stock: -item.quantity } },
+      { new: true, ...(session ? { session } : {}) }
+    );
+
+    if (!updated) {
+      // Either the product was deleted, or another order took the last units
+      // between adding to the cart and checking out.
+      const stillExists = await productModel
+        .findById(item.product)
+        .session(session ?? null);
+
+      return {
+        ok: false,
+        reserved,
+        reason: stillExists
+          ? `Not enough stock for "${stillExists.title}" (${stillExists.stock} left, ${item.quantity} requested)`
+          : "A product in your cart is no longer available",
+      };
+    }
+
+    reserved.push({ productId: item.product, quantity: item.quantity });
+
+    orderItems.push({
+      productTtile: updated.title,
+      productImage: updated.image,
+      unitprice: item.unitPrice,
+      quantity: item.quantity,
+    });
+  }
+
+  return { ok: true, orderItems, reserved };
+};
+
+/** Gives back stock that was reserved before a later step failed. */
+const releaseStock = async (reserved: ReservedLine[]) => {
+  for (const line of reserved) {
+    await productModel.updateOne(
+      { _id: line.productId },
+      { $inc: { stock: line.quantity } }
+    );
+  }
+};
 
 export const checkOut = async ({
   userId,
   address,
   fullName,
-  cvc,
-  exp,
-  cardNumber,
+  payment,
 }: CheckOut) => {
   const cart = await getActiveCartForUser({ userId });
 
-  if (!address) {
-    return { data: "Address must be enetered", statusCode: 400 };
-  }
-  const orderItems: IorderItem[] = [];
-  // Loop on cart items and create order items from it
-  for (const item of cart.items) {
-    const product = await productModel.findById(item.product);
-
-    if (!product) {
-      return { data: "product not found", statusCode: 400 };
-    }
-
-    const orderItem: IorderItem = {
-      productTtile: product.title,
-      productImage: product.image,
-      unitprice: item.unitPrice,
-      quantity: item.quantity,
-    };
-
-    orderItems.push(orderItem);
+  // An empty cart previously produced a valid $0 order with no line items.
+  if (cart.items.length === 0) {
+    return { data: "Your cart is empty", statusCode: 400 };
   }
 
-  const order = await orderModel.create({
+  const paymentRecord = {
+    method: "mock" as const,
+    // A real gateway sets this from a webhook. The mock provider settles
+    // immediately, which keeps the field honest about what it represents.
+    status: "paid" as const,
+    last4: payment?.last4,
+    brand: payment?.brand,
+  };
+
+  const buildOrder = (orderItems: IorderItem[]) => ({
     orderItems,
     total: cart.totalAmount,
     address,
     fullName,
-    cvc,
-    exp,
-    cardNumber,
+    payment: paymentRecord,
     userId,
   });
 
-  await order.save();
-  cart.status = "completed";
-  await cart.save();
+  // ── Preferred path: one transaction covering every write ────────────────
+  if (await transactionsSupported()) {
+    const session = await mongoose.startSession();
+    try {
+      let result: { data: any; statusCode: number } | undefined;
 
-  return { data: order, statusCode: 200 };
+      await session.withTransaction(async () => {
+        const reservation = await reserveStockAndBuildItems(
+          cart.items,
+          session
+        );
+
+        if (!reservation.ok) {
+          result = { data: reservation.reason, statusCode: 409 };
+          // Aborting rolls back every decrement made inside this transaction.
+          await session.abortTransaction();
+          return;
+        }
+
+        const [order] = await orderModel.create(
+          [buildOrder(reservation.orderItems)],
+          { session }
+        );
+
+        cart.status = "completed";
+        await cart.save({ session });
+
+        result = { data: order, statusCode: 200 };
+      });
+
+      return result ?? { data: "Checkout failed", statusCode: 500 };
+    } finally {
+      await session.endSession();
+    }
+  }
+
+  // ── Fallback: standalone mongod has no transactions ─────────────────────
+  // Each stock decrement is still atomic on its own, so overselling remains
+  // impossible. What we lose is all-or-nothing across documents, so we undo
+  // the reservations by hand if a later write fails.
+  const reservation = await reserveStockAndBuildItems(cart.items);
+
+  if (!reservation.ok) {
+    await releaseStock(reservation.reserved);
+    return { data: reservation.reason, statusCode: 409 };
+  }
+
+  try {
+    const order = await orderModel.create(buildOrder(reservation.orderItems));
+
+    cart.status = "completed";
+    await cart.save();
+
+    return { data: order, statusCode: 200 };
+  } catch (err) {
+    await releaseStock(reservation.reserved);
+    throw err;
+  }
 };
-
-// ---- this idea dependes on a quanity removal
-
-// interface DeleteItemInCart {
-//   productId: any; // ID of the product being added
-//   quantity: number; // Quantity of the product being added
-//   userId: string; // ID of the user adding the item
-// }
-
-// export const deleteItemInCart = async ({
-//   productId,
-//   quantity,
-//   userId,
-// }: DeleteItemInCart) => {
-//   const cart = await getActiveCartForUser({ userId });
-
-//   // Check if the product is already in the cart
-//   const existInCart = cart.items.find(
-//     (p) => p.product.toString() === productId
-//   );
-
-//   if (!existInCart) {
-//     return {
-//       data: "There is no item with this id in the cart or the user doesnt have an active cart",
-//       statusCode: 400,
-//     };
-//   }
-
-//   if (quantity <= 0) {
-//     return {
-//       data: "Entered quantity must be greater than zero",
-//       statusCode: 400,
-//     };
-//   }
-
-//   if (existInCart.quantity > quantity) {
-//     existInCart.quantity -= quantity;
-//     cart.totalAmount -= quantity * existInCart.unitPrice;
-//   } else {
-//     cart.totalAmount -= existInCart.quantity * existInCart.unitPrice; // Deduct full price
-//     cart.items = cart.items.filter((p) => p.product.toString() !== productId);
-//   }
-
-//   const updatedCart = await cart.save();
-
-//   return { data: updatedCart, statusCode: 200 };
-// };
