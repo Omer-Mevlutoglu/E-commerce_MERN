@@ -36,6 +36,7 @@ export default function Navbar() {
     handleCloseUserMenu();
   };
   const handleCart = () => navigate("/cart");
+  const handleProducts = () => navigate("/products");
   const handleMyOrders = () => {
     navigate("/my-orders");
     handleCloseUserMenu();
@@ -110,6 +111,17 @@ export default function Navbar() {
               gap: { xs: 1, sm: 2, md: 3 },
             }}
           >
+            {/* Catalogue — the one link everyone needs. */}
+            {!isAdmin && (
+              <Button
+                color="inherit"
+                onClick={handleProducts}
+                sx={{ display: { xs: "none", sm: "inline-flex" } }}
+              >
+                Products
+              </Button>
+            )}
+
             {/* User Cart (users only) */}
             {!isAdmin && isAuthenticated && (
               <IconButton
