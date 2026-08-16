@@ -29,6 +29,14 @@ jobs:
         working-directory: backend
         run: npm ci
 
+      - name: Lint
+        working-directory: backend
+        run: npm run lint
+
+      - name: Check formatting
+        working-directory: backend
+        run: npm run format:check
+
       - name: Typecheck
         working-directory: backend
         run: npm run typecheck
@@ -83,6 +91,19 @@ jobs:
       - name: Build
         working-directory: frontend
         run: npm run build
+
+      # A budget, not a warning. Vendor chunks are excluded — they are large by
+      # nature and cached separately; this guards the chunk that changes.
+      - name: Check bundle budget
+        working-directory: frontend
+        run: |
+          BUDGET_KB=300
+          SIZE_KB=$(du -k dist/assets/index-*.js | cut -f1)
+          echo "App chunk: ${SIZE_KB} kB (budget ${BUDGET_KB} kB)"
+          if [ "$SIZE_KB" -gt "$BUDGET_KB" ]; then
+            echo "::error::App chunk ${SIZE_KB} kB exceeds the ${BUDGET_KB} kB budget"
+            exit 1
+          fi
 
       - name: Upload coverage
         if: always()
