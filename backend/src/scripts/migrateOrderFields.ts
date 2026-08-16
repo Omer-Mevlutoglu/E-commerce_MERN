@@ -84,7 +84,16 @@ import { env } from "../config/env";
     console.log(`[migrate] backfilled payment on ${noPayment.modifiedCount} order(s)`);
   }
 
-  // ── 4. Mark pre-existing products as active ───────────────────────────
+  // ── 4. Give existing orders a fulfilment status ───────────────────────
+  const noStatus = await orders.updateMany(
+    { status: { $exists: false } },
+    { $set: { status: "processing" } }
+  );
+  if (noStatus.modifiedCount > 0) {
+    console.log(`[migrate] set status on ${noStatus.modifiedCount} order(s)`);
+  }
+
+  // ── 5. Mark pre-existing products as active ───────────────────────────
   const products = mongoose.connection.collection("products");
   const activated = await products.updateMany(
     { isActive: { $exists: false } },
@@ -92,6 +101,17 @@ import { env } from "../config/env";
   );
   if (activated.modifiedCount > 0) {
     console.log(`[migrate] marked ${activated.modifiedCount} product(s) active`);
+  }
+
+  // ── 6. Backfill the catalogue fields added in §1.4 ────────────────────
+  const categorised = await products.updateMany(
+    { category: { $exists: false } },
+    { $set: { category: "laptops", description: "", brand: "" } }
+  );
+  if (categorised.modifiedCount > 0) {
+    console.log(
+      `[migrate] backfilled category/description/brand on ${categorised.modifiedCount} product(s)`
+    );
   }
 
   console.log("[migrate] done");
