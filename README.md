@@ -331,9 +331,25 @@ but not permitted · `404` not found · `409` conflict (out of stock, email take
 
 | Method | Path | Description |
 | ------ | ---- | ----------- |
-| `GET` | `/api/v1/products` | Active catalogue |
+| `GET` | `/api/v1/products` | Catalogue — paginated, filterable, searchable |
+| `GET` | `/api/v1/products/:productId` | A single product |
+| `GET` | `/api/v1/products/categories` | The category list the filters use |
 | `POST` | `/api/v1/auth/register` | `{ firstName, lastName, email, password }` → `{ token }` |
 | `POST` | `/api/v1/auth/login` | `{ email, password }` → `{ token }` |
+
+The listing accepts `page`, `limit` (max 48), `search`, `category`
+(`laptops` \| `gaming` \| `ultrabooks` \| `accessories`) and `sort`
+(`newest` \| `price-asc` \| `price-desc` \| `title-asc`), and responds with:
+
+```jsonc
+{
+  "items": [ /* … */ ],
+  "page": 1, "limit": 12, "total": 37, "totalPages": 4, "hasNextPage": true
+}
+```
+
+Search runs against a MongoDB text index over title, brand and description,
+weighted so a title match ranks highest.
 
 Registration always creates a `user`; the role is never read from the request.
 Both auth endpoints are rate-limited to 10 attempts per 15 minutes.
@@ -350,6 +366,9 @@ Both auth endpoints are rate-limited to 10 attempts per 15 minutes.
 | `POST` | `/api/v1/cart/checkout` | `{ fullName, address, payment: { last4, brand } }` |
 | `GET` | `/api/v1/orders` | The signed-in customer's orders, newest first |
 
+Orders move through `processing → shipped → delivered`, with `cancelled` as an
+exit. Only an admin can change the status.
+
 **Checkout never receives a card number, CVC or expiry date.** The browser
 validates the card and derives `last4` + `brand`; nothing else is transmitted or
 stored. Checkout decrements stock atomically and runs in a transaction where the
@@ -360,11 +379,13 @@ database supports one.
 | Method | Path | Description |
 | ------ | ---- | ----------- |
 | `GET` | `/api/v1/admin/products` | All products, including retired |
-| `POST` | `/api/v1/admin/products` | `{ title, image, price, stock }` |
+| `GET` | `/api/v1/admin/products/:productId` | One product, retired included |
+| `POST` | `/api/v1/admin/products` | `{ title, image, price, stock, category?, brand?, description? }` |
 | `PUT` | `/api/v1/admin/products/:productId` | Partial update |
 | `DELETE` | `/api/v1/admin/products/:productId` | Retire (soft delete) |
 | `POST` | `/api/v1/admin/products/:productId/restore` | Un-retire |
 | `GET` | `/api/v1/admin/orders` | Every order with customer details |
+| `PATCH` | `/api/v1/admin/orders/:orderId/status` | `{ status }` |
 
 Products are **retired, not deleted** — a hard delete left dangling references in
 any cart still holding the product.
