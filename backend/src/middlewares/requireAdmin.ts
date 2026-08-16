@@ -1,12 +1,12 @@
 import { Response, NextFunction } from "express";
-import { ExtenedRequest } from "../types/extendedRequest";
+import { MaybeAuthedRequest } from "../types/authedRequest";
 
 /**
  * Restricts a route to accounts with role "admin".
  * Assumes validateJWT has already run.
  */
 const requireAdmin = (
-  req: ExtenedRequest,
+  req: MaybeAuthedRequest,
   res: Response,
   next: NextFunction
 ): void => {

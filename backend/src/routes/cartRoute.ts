@@ -17,7 +17,7 @@ import {
 } from "../schemas/cart.schema";
 import { productIdParamSchema } from "../schemas/common.schema";
 import { asyncHandler } from "../utils/asyncHandler";
-import { ExtenedRequest } from "../types/extendedRequest";
+import { AuthedRequest } from "../types/authedRequest";
 
 const router = express.Router();
 
@@ -27,9 +27,9 @@ router.use(validateJWT, requireUser);
 
 router.get(
   "/",
-  asyncHandler(async (req: ExtenedRequest, res) => {
+  asyncHandler(async (req: AuthedRequest, res) => {
     const cart = await getActiveCartForUser({
-      userId: req.user._id,
+      userId: String(req.user._id),
       populateProduct: true,
     });
     res.status(200).json(cart);
@@ -39,12 +39,12 @@ router.get(
 router.post(
   "/items",
   validate(addItemSchema),
-  asyncHandler(async (req: ExtenedRequest, res) => {
+  asyncHandler(async (req: AuthedRequest, res) => {
     const { productId, quantity } = req.body;
     const cart = await addItemToCart({
       productId,
       quantity,
-      userId: req.user._id,
+      userId: String(req.user._id),
     });
     res.status(200).json(cart);
   })
@@ -53,12 +53,12 @@ router.post(
 router.put(
   "/items",
   validate(updateItemSchema),
-  asyncHandler(async (req: ExtenedRequest, res) => {
+  asyncHandler(async (req: AuthedRequest, res) => {
     const { productId, quantity } = req.body;
     const cart = await updateItemInCart({
       productId,
       quantity,
-      userId: req.user._id,
+      userId: String(req.user._id),
     });
     res.status(200).json(cart);
   })
@@ -67,10 +67,10 @@ router.put(
 router.delete(
   "/items/:productId",
   validate(productIdParamSchema, "params"),
-  asyncHandler(async (req: ExtenedRequest, res) => {
+  asyncHandler(async (req: AuthedRequest, res) => {
     const cart = await deleteItemInCart({
       productId: req.params.productId,
-      userId: req.user._id,
+      userId: String(req.user._id),
     });
     res.status(200).json(cart);
   })
@@ -78,8 +78,8 @@ router.delete(
 
 router.delete(
   "/",
-  asyncHandler(async (req: ExtenedRequest, res) => {
-    const cart = await clearCart({ userId: req.user._id });
+  asyncHandler(async (req: AuthedRequest, res) => {
+    const cart = await clearCart({ userId: String(req.user._id) });
     res.status(200).json(cart);
   })
 );
@@ -87,11 +87,11 @@ router.delete(
 router.post(
   "/checkout",
   validate(checkoutSchema),
-  asyncHandler(async (req: ExtenedRequest, res) => {
+  asyncHandler(async (req: AuthedRequest, res) => {
     // No card number, CVC or expiry: the browser keeps those.
     const { address, fullName, payment } = req.body;
     const order = await checkOut({
-      userId: req.user._id,
+      userId: String(req.user._id),
       address,
       fullName,
       payment,

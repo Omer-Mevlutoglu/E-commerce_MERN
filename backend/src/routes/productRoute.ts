@@ -1,7 +1,10 @@
 import express from "express";
 import { listProducts, getProductById } from "../services/productService";
 import { validate } from "../middlewares/validate";
-import { listProductsSchema } from "../schemas/product.schema";
+import {
+  listProductsSchema,
+  ListProductsInput,
+} from "../schemas/product.schema";
 import { productIdParamSchema } from "../schemas/common.schema";
 import { asyncHandler } from "../utils/asyncHandler";
 import { PRODUCT_CATEGORIES } from "../models/productModel";
@@ -20,7 +23,7 @@ router.get(
   asyncHandler(async (req, res) => {
     // includeInactive is admin-only; the public route never honours it.
     const result = await listProducts({
-      ...(req.query as any),
+      ...(req.query as unknown as ListProductsInput),
       includeInactive: false,
     });
     res.status(200).json(result);

@@ -1,7 +1,7 @@
 import { Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
 import userModel from "../models/userModel";
-import { ExtenedRequest } from "../types/extendedRequest";
+import { MaybeAuthedRequest } from "../types/authedRequest";
 import { env } from "../config/env";
 
 /**
@@ -12,7 +12,7 @@ import { env } from "../config/env";
  * "you are who you say you are, but you may not do this".
  */
 const validateJWT = async (
-  req: ExtenedRequest,
+  req: MaybeAuthedRequest,
   res: Response,
   next: NextFunction
 ): Promise<void> => {
@@ -43,7 +43,9 @@ const validateJWT = async (
     const expired = err instanceof jwt.TokenExpiredError;
     res.status(401).json({
       error: expired ? "TokenExpired" : "InvalidToken",
-      message: expired ? "Session expired, please log in again" : "Invalid token",
+      message: expired
+        ? "Session expired, please log in again"
+        : "Invalid token",
     });
     return;
   }

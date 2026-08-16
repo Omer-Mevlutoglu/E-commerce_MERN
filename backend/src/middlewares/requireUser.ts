@@ -1,5 +1,5 @@
 import { Response, NextFunction } from "express";
-import { ExtenedRequest } from "../types/extendedRequest";
+import { MaybeAuthedRequest } from "../types/authedRequest";
 
 /**
  * Restricts a route to accounts with role "user".
@@ -11,7 +11,7 @@ import { ExtenedRequest } from "../types/extendedRequest";
  * Assumes validateJWT has already run.
  */
 const requireUser = (
-  req: ExtenedRequest,
+  req: MaybeAuthedRequest,
   res: Response,
   next: NextFunction
 ): void => {

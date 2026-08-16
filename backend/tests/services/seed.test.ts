@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import bcrypt from "bcrypt";
 import { seedDemoUsers } from "../../src/services/demoSeedService";
-import { seedIntialProducts } from "../../src/services/productService";
+import { seedInitialProducts } from "../../src/services/productService";
 import userModel from "../../src/models/userModel";
 import productModel from "../../src/models/productModel";
 import { makeProduct } from "../factories";
@@ -60,9 +60,9 @@ describe("seedDemoUsers", () => {
   });
 });
 
-describe("seedIntialProducts", () => {
+describe("seedInitialProducts", () => {
   it("inserts the sample catalogue into an empty database", async () => {
-    await seedIntialProducts();
+    await seedInitialProducts();
 
     expect(await productModel.countDocuments()).toBe(3);
   });
@@ -70,7 +70,7 @@ describe("seedIntialProducts", () => {
   it("does nothing when products already exist", async () => {
     await makeProduct();
 
-    await seedIntialProducts();
+    await seedInitialProducts();
 
     expect(await productModel.countDocuments()).toBe(1);
   });

@@ -75,7 +75,7 @@ export const getProductById = async (
 export const getAllProducts = async () =>
   productModel.find({ isActive: true }).sort({ createdAt: -1 });
 
-export const seedIntialProducts = async () => {
+export const seedInitialProducts = async () => {
   const products = [
     {
       title: "Dell XPS 15",

@@ -7,6 +7,7 @@ import {
   createProductSchema,
   updateProductSchema,
   listProductsSchema,
+  ListProductsInput,
 } from "../schemas/product.schema";
 import { productIdParamSchema } from "../schemas/common.schema";
 import { asyncHandler } from "../utils/asyncHandler";
@@ -28,7 +29,7 @@ router.get(
   validate(listProductsSchema, "query"),
   asyncHandler(async (req, res) => {
     const result = await listProducts({
-      ...(req.query as any),
+      ...(req.query as unknown as ListProductsInput),
       includeInactive: true,
     });
     res.status(200).json(result);
