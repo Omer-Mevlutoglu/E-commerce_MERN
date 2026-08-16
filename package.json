@@ -1,0 +1,40 @@
+{
+  "name": "laptopia",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Laptopia — a MERN e-commerce storefront with a role-based admin",
+  "engines": {
+    "node": ">=20"
+  },
+  "//": [
+    "Deliberately NOT an npm workspace. Workspaces consolidate to a single root",
+    "lock file, which breaks three things that already work and are tested:",
+    "both Dockerfiles (they build from ./backend and ./frontend and run npm ci",
+    "against a local lock), the CI cache keys, and Railway/Vercel's root-directory",
+    "setting. This root package.json exists only to hold the shared tooling and",
+    "to run both apps from one place.",
+    "Revisit if a shared package (e.g. Zod schemas used by both) is ever added."
+  ],
+  "scripts": {
+    "postinstall": "npm --prefix backend install && npm --prefix frontend install",
+    "dev:api": "npm --prefix backend run dev",
+    "dev:web": "npm --prefix frontend run dev",
+    "build": "npm --prefix backend run build && npm --prefix frontend run build",
+    "test": "npm --prefix backend test && npm --prefix frontend test",
+    "test:e2e": "npm --prefix frontend run test:e2e",
+    "lint": "npm --prefix backend run lint && npm --prefix frontend run lint",
+    "typecheck": "npm --prefix backend run typecheck && npm --prefix frontend run typecheck",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "verify": "npm run lint && npm run format:check && npm run typecheck && npm test && npm run build",
+    "prepare": "husky"
+  },
+  "devDependencies": {
+    "husky": "^9.1.7",
+    "lint-staged": "^15.4.3",
+    "prettier": "^3.4.2"
+  },
+  "lint-staged": {
+    "*.{ts,tsx,js,mjs,json,css,yml,yaml}": "prettier --write"
+  }
+}

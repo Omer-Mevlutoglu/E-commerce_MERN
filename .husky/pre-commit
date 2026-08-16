@@ -1,0 +1,4 @@
+# Format only what is being committed. Deliberately fast — linting and tests
+# belong in CI, where they can take as long as they need without making every
+# commit feel slow.
+npx lint-staged
