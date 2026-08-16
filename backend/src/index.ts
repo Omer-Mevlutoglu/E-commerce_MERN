@@ -2,8 +2,9 @@ import mongoose from "mongoose";
 // Imported first: parsing the environment fails fast, before anything else runs.
 import { env } from "./config/env";
 import { createApp } from "./app";
-import { seedIntialProducts } from "./services/productService";
+import { seedInitialProducts } from "./services/productService";
 import { seedDemoUsers } from "./services/demoSeedService";
+import { ensureIndexes } from "./config/indexes";
 
 const start = async () => {
   try {
@@ -14,8 +15,13 @@ const start = async () => {
     process.exit(1);
   }
 
+  // Before serving anything: catalogue search needs its text index to exist,
+  // and Mongoose would otherwise build it in the background while requests
+  // were already arriving.
+  await ensureIndexes();
+
   // seed the default products to db (now that the connection is established)
-  await seedIntialProducts();
+  await seedInitialProducts();
 
   if (env.SEED_DEMO_USERS) {
     await seedDemoUsers();

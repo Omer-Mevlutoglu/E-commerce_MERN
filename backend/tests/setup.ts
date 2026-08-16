@@ -1,6 +1,7 @@
 import { MongoMemoryReplSet } from "mongodb-memory-server";
 import mongoose from "mongoose";
 import { afterAll, afterEach, beforeAll } from "vitest";
+import { ensureIndexes } from "../src/config/indexes";
 
 let replSet: MongoMemoryReplSet;
 
@@ -17,9 +18,17 @@ beforeAll(async () => {
   });
 
   await mongoose.connect(replSet.getUri());
+
+  // Same call the server makes at startup. Without it, a `$text` search runs
+  // before the index exists and fails outright — which is exactly the
+  // production bug this mirrors.
+  await ensureIndexes();
 });
 
-/** Each test starts from an empty database, so order never matters. */
+/**
+ * Each test starts from an empty database, so order never matters.
+ * Documents only — dropping collections would take the indexes with them.
+ */
 afterEach(async () => {
   const { collections } = mongoose.connection;
   await Promise.all(
