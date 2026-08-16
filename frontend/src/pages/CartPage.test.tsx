@@ -5,6 +5,7 @@ import { MemoryRouter } from "react-router-dom";
 import { http, HttpResponse } from "msw";
 import AuthProvider from "../context/Auth/AuthProvider";
 import CartProvider from "../context/Cart/CartProvider";
+import FeedbackProvider from "../context/Feedback/FeedbackProvider";
 import CartPage from "./CartPage";
 import { server, API, mockProduct, emptyCart } from "../test/server";
 import { makeToken } from "../test/token";
@@ -23,13 +24,15 @@ const cartOf = (quantity: number, stock = 5) => ({
 const renderCartPage = () => {
   localStorage.setItem("token", makeToken({ role: "user" }));
   return render(
-    <AuthProvider>
-      <CartProvider>
-        <MemoryRouter>
-          <CartPage />
-        </MemoryRouter>
-      </CartProvider>
-    </AuthProvider>
+    <FeedbackProvider>
+      <AuthProvider>
+        <CartProvider>
+          <MemoryRouter>
+            <CartPage />
+          </MemoryRouter>
+        </CartProvider>
+      </AuthProvider>
+    </FeedbackProvider>
   );
 };
 

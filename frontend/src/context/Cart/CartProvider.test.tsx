@@ -5,6 +5,7 @@ import AuthProvider from "../Auth/AuthProvider";
 import { useAuth } from "../Auth/AuthContext";
 import CartProvider from "./CartProvider";
 import { useCart } from "./CartContext";
+import FeedbackProvider from "../Feedback/FeedbackProvider";
 import {
   server,
   API,
@@ -31,13 +32,17 @@ const Probe = () => {
   );
 };
 
+// FeedbackProvider owns the snackbar now, so it has to be in the tree for the
+// error assertions to have anything to find.
 const renderCart = () =>
   render(
-    <AuthProvider>
-      <CartProvider>
-        <Probe />
-      </CartProvider>
-    </AuthProvider>
+    <FeedbackProvider>
+      <AuthProvider>
+        <CartProvider>
+          <Probe />
+        </CartProvider>
+      </AuthProvider>
+    </FeedbackProvider>
   );
 
 const signIn = (role: "user" | "admin" = "user") => {

@@ -119,3 +119,60 @@ test("guests are sent to login and cannot add to cart", async ({ page }) => {
   await page.goto("/cart");
   await expect(page).toHaveURL("/login");
 });
+
+test("the catalogue can be searched, filtered and paged", async ({ page }) => {
+  await page.goto("/products");
+
+  await expect(page.getByRole("heading", { name: "All Products" })).toBeVisible();
+  await expect(page.getByText(/products available/)).toBeVisible();
+
+  // Filtering puts the choice in the URL so the view can be linked.
+  await page.getByRole("button", { name: /🎮 Gaming/ }).click();
+  await expect(page).toHaveURL(/category=gaming/);
+
+  // Searching for something that cannot match shows the empty state.
+  await page.getByLabel("Search").fill("zzzznotarealproduct");
+  await expect(page.getByText(/no products match your search/i)).toBeVisible();
+
+  await page.getByRole("button", { name: /clear filters/i }).click();
+  await expect(page).toHaveURL("/products");
+});
+
+test("a category tile on the home page filters the catalogue", async ({
+  page,
+}) => {
+  await page.goto("/");
+
+  await page
+    .getByRole("button", { name: /Ultrabooks/ })
+    .click();
+
+  await expect(page).toHaveURL(/\/products\?category=ultrabooks/);
+});
+
+test("a product card opens its detail page", async ({ page }) => {
+  await page.goto("/products");
+
+  const firstTitle = await page
+    .locator(".MuiCard-root h3")
+    .first()
+    .textContent();
+  await page.locator(".MuiCard-root a").first().click();
+
+  await expect(page).toHaveURL(/\/products\/[a-f0-9]{24}/);
+  await expect(
+    page.getByRole("heading", { name: firstTitle!.trim() })
+  ).toBeVisible();
+  await expect(page.getByText(/free delivery on every order/i)).toBeVisible();
+});
+
+test("an unknown URL renders a 404 instead of silently going home", async ({
+  page,
+}) => {
+  await page.goto("/this-page-does-not-exist");
+
+  await expect(page.getByText("404")).toBeVisible();
+  await expect(page.getByText(/this page doesn't exist/i)).toBeVisible();
+  // The old behaviour was a redirect, which hid broken links.
+  await expect(page).toHaveURL("/this-page-does-not-exist");
+});
