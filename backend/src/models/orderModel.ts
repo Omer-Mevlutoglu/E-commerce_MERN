@@ -26,12 +26,26 @@ export interface Ipayment {
   reference?: string;
 }
 
+/**
+ * Fulfilment lifecycle. Orders previously had no status at all, so "an order
+ * exists" was the only state a customer or an admin could observe.
+ */
+export const ORDER_STATUSES = [
+  "processing",
+  "shipped",
+  "delivered",
+  "cancelled",
+] as const;
+
+export type OrderStatus = (typeof ORDER_STATUSES)[number];
+
 export interface Iorder extends Document {
   orderItems: IorderItem[];
   total: number;
   address: string;
   fullName: string;
   payment: Ipayment;
+  status: OrderStatus;
   userId: ObjectId | string;
   createdAt: Date;
   updatedAt: Date;
@@ -69,6 +83,12 @@ const orderSchema = new Schema<Iorder>(
     address: { type: String, required: true },
     fullName: { type: String, required: true },
     payment: { type: paymentSchema, default: () => ({}) },
+    status: {
+      type: String,
+      enum: ORDER_STATUSES,
+      default: "processing",
+      required: true,
+    },
 
     userId: {
       type: mongoose.Schema.Types.ObjectId, // Store reference to a user

@@ -1,5 +1,6 @@
 // services/adminOrderService.ts
-import { orderModel } from "../models/orderModel";
+import { orderModel, OrderStatus } from "../models/orderModel";
+import { NotFound } from "../utils/AppError";
 
 export interface PopulatedOrder {
   _id: string;
@@ -12,6 +13,7 @@ export interface PopulatedOrder {
   total: number;
   address: string;
   fullName: string;
+  status: OrderStatus;
   payment: {
     method?: string;
     status?: string;
@@ -47,6 +49,7 @@ export const getAllOrders = async (): Promise<PopulatedOrder[]> => {
     total: order.total,
     address: order.address,
     fullName: order.fullName,
+    status: order.status ?? "processing",
     payment: {
       method: order.payment?.method,
       status: order.payment?.status,
@@ -65,4 +68,21 @@ export const getAllOrders = async (): Promise<PopulatedOrder[]> => {
         }
       : null,
   }));
+};
+
+export const updateOrderStatus = async (
+  orderId: string,
+  status: OrderStatus
+) => {
+  const order = await orderModel.findByIdAndUpdate(
+    orderId,
+    { status },
+    { new: true, runValidators: true }
+  );
+
+  if (!order) {
+    throw NotFound("Order not found", "OrderNotFound");
+  }
+
+  return order;
 };
