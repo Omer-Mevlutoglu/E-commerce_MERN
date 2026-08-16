@@ -11,6 +11,8 @@ import orderRoute from "./routes/orderRoute";
 import adminProductRoute from "./routes/adminProductRoute";
 import adminOrderRoute from "./routes/adminOrderRoute";
 import { errorHandler, notFoundHandler } from "./middlewares/errorHandler";
+import swaggerUi from "swagger-ui-express";
+import { openApiDocument } from "./docs/openapi";
 
 interface CreateAppOptions {
   /**
@@ -106,6 +108,23 @@ export const createApp = ({
   api.use("/admin/orders", adminOrderRoute);
 
   app.use("/api/v1", api);
+
+  // Generated from the same Zod schemas the API validates with, so the docs
+  // cannot drift from the behaviour.
+  app.get("/api/v1/openapi.json", (_req, res) => {
+    res.status(200).json(openApiDocument);
+  });
+
+  app.use(
+    "/api/docs",
+    // helmet's default CSP blocks the inline styles Swagger UI relies on.
+    helmet({ contentSecurityPolicy: false }),
+    swaggerUi.serve,
+    swaggerUi.setup(openApiDocument, {
+      customSiteTitle: "Laptopia API",
+      swaggerOptions: { persistAuthorization: true },
+    })
+  );
 
   // Must come after every route, and in this order.
   app.use(notFoundHandler);
