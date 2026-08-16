@@ -1,6 +1,14 @@
 // src/Components/Footer.tsx
-import { Box, Container, Link, Typography, Grid2 } from "@mui/material";
+import { Box, Container, Link, Stack, Typography } from "@mui/material";
+import { Link as RouterLink } from "react-router-dom";
 
+const REPO_URL = "https://github.com/Omer-Mevlutoglu/E-commerce_MERN";
+
+/**
+ * The links here used to point at /privacy, /terms and /contact — none of
+ * which are routes, so every one of them bounced off the catch-all back to the
+ * home page. Replaced with destinations that exist.
+ */
 export default function Footer() {
   const year = new Date().getFullYear();
 
@@ -15,52 +23,39 @@ export default function Footer() {
       }}
     >
       <Container maxWidth="lg">
-        <Grid2
-          container
+        <Stack
+          direction={{ xs: "column", md: "row" }}
           spacing={2}
           justifyContent="space-between"
           alignItems="center"
         >
-          <Grid2 size={{ xs: 12, md: 6 }}>
-            <Typography variant="body2" color="text.secondary">
-              &copy; {year} Laptopia. All rights reserved.
-            </Typography>
-          </Grid2>
-          <Grid2 size={{ xs: 12, md: 6 }}>
-            <Box
-              sx={{
-                display: "flex",
-                gap: 2,
-                justifyContent: { xs: "center", md: "flex-end" },
-              }}
+          <Typography variant="body2" color="text.secondary">
+            &copy; {year} Laptopia. A portfolio project — no real orders are
+            fulfilled.
+          </Typography>
+
+          <Stack direction="row" spacing={3}>
+            <Link
+              component={RouterLink}
+              to="/products"
+              variant="body2"
+              color="text.secondary"
+              underline="hover"
             >
-              <Link
-                href="/privacy"
-                variant="body2"
-                color="text.secondary"
-                underline="hover"
-              >
-                Privacy Policy
-              </Link>
-              <Link
-                href="/terms"
-                variant="body2"
-                color="text.secondary"
-                underline="hover"
-              >
-                Terms of Service
-              </Link>
-              <Link
-                href="/contact"
-                variant="body2"
-                color="text.secondary"
-                underline="hover"
-              >
-                Contact Us
-              </Link>
-            </Box>
-          </Grid2>
-        </Grid2>
+              All products
+            </Link>
+            <Link
+              href={REPO_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              variant="body2"
+              color="text.secondary"
+              underline="hover"
+            >
+              Source on GitHub
+            </Link>
+          </Stack>
+        </Stack>
       </Container>
     </Box>
   );

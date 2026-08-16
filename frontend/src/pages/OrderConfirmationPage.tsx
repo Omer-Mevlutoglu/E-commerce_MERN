@@ -6,28 +6,30 @@ import {
   Typography,
   useTheme,
 } from "@mui/material";
-import { useLocation, useNavigate } from "react-router-dom";
-import { useCart } from "../context/Cart/CartContext";
+import { Navigate, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/Auth/AuthContext";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
-import React from "react";
 import { CartItem } from "../types/CartItem"; // Import CartItem type
 
 const OrderConfirmationPage = () => {
   const theme = useTheme();
   const navigate = useNavigate();
-  const { ClearCart } = useCart();
   const { username } = useAuth();
   const { state } = useLocation();
   const { cartItem, totalAmount } = state || {};
   const displayItems: CartItem[] = cartItem || [];
   const displayTotal = totalAmount || 0;
 
-  // Clear cart when leaving confirmation page
-  React.useEffect(() => {
-    return () => ClearCart();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  // The cart was already cleared by CheckoutPage. This page used to clear it
+  // again on unmount, which made the server retire the cart and immediately
+  // build a fresh one for no reason.
+  //
+  // Reaching this page without state means a direct visit or a refresh, so
+  // there is no order to show — send them home rather than render an empty
+  // "Order Confirmed!".
+  if (!state) {
+    return <Navigate to="/" replace />;
+  }
 
   return (
     <Container maxWidth="lg" sx={{ py: 10, minHeight: "80vh" }}>

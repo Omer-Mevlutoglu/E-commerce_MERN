@@ -2,7 +2,7 @@ import { Box, Container, Typography, TextField, Button } from "@mui/material";
 import { useRef, useState } from "react";
 import { useAuth } from "../context/Auth/AuthContext";
 import { useNavigate } from "react-router-dom";
-const BASE_URL = import.meta.env.VITE_BASE_URL;
+import { api, errorMessage } from "../api/client";
 
 const RegisterPage = () => {
   const [error, setError] = useState("");
@@ -25,24 +25,23 @@ const RegisterPage = () => {
       return;
     }
 
+    if (password.length < 8) {
+      setError("Password must be at least 8 characters");
+      return;
+    }
+
+    setError("");
+
     try {
-      const response = await fetch(`${BASE_URL}/users/register`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ firstName, lastName, email, password }),
-      });
-
-      if (!response.ok) {
-        throw new Error(
-          "Registration failed - please try different credentials"
-        );
-      }
-
-      const token = await response.json();
+      const { token } = await api.post<{ token: string }>(
+        "/auth/register",
+        { firstName, lastName, email, password },
+        { auth: false }
+      );
       login(email, token);
       navigate("/");
-    } catch (error) {
-      setError(error instanceof Error ? error.message : "Registration failed");
+    } catch (err) {
+      setError(errorMessage(err, "Registration failed"));
     }
   };
 

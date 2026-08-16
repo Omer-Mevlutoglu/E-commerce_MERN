@@ -1,18 +1,34 @@
-import { Box, Button, Container, TextField, Typography } from "@mui/material";
+import {
+  Box,
+  Button,
+  Container,
+  MenuItem,
+  Stack,
+  TextField,
+  Typography,
+} from "@mui/material";
 import { useRef, useState } from "react";
-import { useAuth } from "../context/Auth/AuthContext";
 import { useNavigate } from "react-router-dom";
-
-const BASE_URL = import.meta.env.VITE_BASE_URL;
+import { api, errorMessage } from "../api/client";
+import { useFeedback } from "../context/Feedback/FeedbackContext";
+import {
+  CATEGORY_META,
+  PRODUCT_CATEGORIES,
+  ProductCategory,
+} from "../types/product";
 
 const AdminAddProductPage = () => {
   const titleRef = useRef<HTMLInputElement>(null);
+  const brandRef = useRef<HTMLInputElement>(null);
+  const descriptionRef = useRef<HTMLInputElement>(null);
   const imageRef = useRef<HTMLInputElement>(null);
   const priceRef = useRef<HTMLInputElement>(null);
   const stockRef = useRef<HTMLInputElement>(null);
-  const { token } = useAuth();
+  const [category, setCategory] = useState<ProductCategory>("laptops");
   const navigate = useNavigate();
+  const { showSuccess } = useFeedback();
   const [error, setError] = useState("");
+  const [isSaving, setIsSaving] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -26,36 +42,58 @@ const AdminAddProductPage = () => {
       return;
     }
 
+    setError("");
+    setIsSaving(true);
+
     try {
-      const response = await fetch(`${BASE_URL}/admin/products`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ title, image, price, stock }),
+      await api.post("/admin/products", {
+        title,
+        brand: brandRef.current?.value.trim() ?? "",
+        description: descriptionRef.current?.value.trim() ?? "",
+        category,
+        image,
+        price,
+        stock,
       });
-      if (!response.ok) {
-        throw new Error("Failed to add product");
-      }
-      // Optionally: you could clear the form or navigate elsewhere
+      showSuccess("Product created");
       navigate("/admin/products/list");
     } catch (err) {
-      setError((err as Error).message);
+      setError(errorMessage(err, "Failed to add product"));
+    } finally {
+      setIsSaving(false);
     }
   };
 
   return (
-    <Container maxWidth="sm" sx={{ py: 10 }}>
-      <Typography variant="h4" gutterBottom>
+    <Container maxWidth="sm" sx={{ py: { xs: 12, md: 14 } }}>
+      <Typography variant="h4" gutterBottom sx={{ fontWeight: 700 }}>
         Add New Product
       </Typography>
       <Box
         component="form"
         onSubmit={handleSubmit}
-        sx={{ display: "flex", flexDirection: "column", gap: 2 }}
+        sx={{ display: "flex", flexDirection: "column", gap: 2, mt: 3 }}
       >
         <TextField inputRef={titleRef} label="Title" required />
+        <TextField inputRef={brandRef} label="Brand" />
+        <TextField
+          select
+          label="Category"
+          value={category}
+          onChange={(e) => setCategory(e.target.value as ProductCategory)}
+        >
+          {PRODUCT_CATEGORIES.map((value) => (
+            <MenuItem key={value} value={value}>
+              {CATEGORY_META[value].icon} {CATEGORY_META[value].label}
+            </MenuItem>
+          ))}
+        </TextField>
+        <TextField
+          inputRef={descriptionRef}
+          label="Description"
+          multiline
+          minRows={3}
+        />
         <TextField inputRef={imageRef} label="Image URL" required />
         <TextField
           inputRef={priceRef}
@@ -71,9 +109,19 @@ const AdminAddProductPage = () => {
           required
           InputProps={{ inputProps: { min: 0, step: 1 } }}
         />
-        <Button type="submit" variant="contained">
-          Create Product
-        </Button>
+
+        <Stack direction="row" spacing={2} sx={{ mt: 1 }}>
+          <Button type="submit" variant="contained" disabled={isSaving}>
+            {isSaving ? "Creating…" : "Create Product"}
+          </Button>
+          <Button
+            variant="outlined"
+            onClick={() => navigate("/admin/products/list")}
+          >
+            Cancel
+          </Button>
+        </Stack>
+
         {error && (
           <Typography color="error" variant="body2">
             {error}

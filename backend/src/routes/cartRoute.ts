@@ -1,4 +1,4 @@
-import express, { response } from "express";
+import express from "express";
 import {
   addItemToCart,
   getActiveCartForUser,
@@ -8,94 +8,96 @@ import {
   checkOut,
 } from "../services/cartService";
 import validateJWT from "../middlewares/validateJWT";
-import { Request, Response } from "express";
-import { ExtenedRequest } from "../types/extendedRequest";
+import requireUser from "../middlewares/requireUser";
+import { validate } from "../middlewares/validate";
+import {
+  addItemSchema,
+  updateItemSchema,
+  checkoutSchema,
+} from "../schemas/cart.schema";
+import { productIdParamSchema } from "../schemas/common.schema";
+import { asyncHandler } from "../utils/asyncHandler";
+import { AuthedRequest } from "../types/authedRequest";
 
 const router = express.Router();
 
-router.get("/", validateJWT, async (req: ExtenedRequest, res) => {
-  try {
-    const userId = req.user._id;
+// The cart belongs to customers. Admin tokens were previously accepted here
+// because validateJWT alone does not look at the role.
+router.use(validateJWT, requireUser);
+
+router.get(
+  "/",
+  asyncHandler(async (req: AuthedRequest, res) => {
     const cart = await getActiveCartForUser({
-      userId,
+      userId: String(req.user._id),
       populateProduct: true,
     });
-    res.status(200).send(cart);
-  } catch (error) {
-    res.status(500).send("Something went wrong");
-  }
-});
+    res.status(200).json(cart);
+  })
+);
 
-router.post("/items", validateJWT, async (req: ExtenedRequest, res) => {
-  try {
-    const userId = req?.user?._id;
+router.post(
+  "/items",
+  validate(addItemSchema),
+  asyncHandler(async (req: AuthedRequest, res) => {
     const { productId, quantity } = req.body;
-    const response = await addItemToCart({ productId, quantity, userId });
-    res.status(response.statusCode).send(response.data);
-  } catch (error) {
-    res.status(500).send("Something went wrong");
-  }
-});
+    const cart = await addItemToCart({
+      productId,
+      quantity,
+      userId: String(req.user._id),
+    });
+    res.status(200).json(cart);
+  })
+);
 
-router.put("/items", validateJWT, async (req: ExtenedRequest, res) => {
-  try {
-    const userId = req?.user?._id;
+router.put(
+  "/items",
+  validate(updateItemSchema),
+  asyncHandler(async (req: AuthedRequest, res) => {
     const { productId, quantity } = req.body;
-    const response = await updateItemInCart({ productId, quantity, userId });
-    res.status(response.statusCode).send(response.data);
-  } catch (error) {
-    res.status(500).send("Something went wrong");
-  }
-});
+    const cart = await updateItemInCart({
+      productId,
+      quantity,
+      userId: String(req.user._id),
+    });
+    res.status(200).json(cart);
+  })
+);
 
 router.delete(
   "/items/:productId",
-  validateJWT,
-  async (req: ExtenedRequest, res) => {
-    try {
-      const userId = req?.user?._id;
-      const { productId } = req.params;
-      const response = await deleteItemInCart({ productId, userId });
-      res.status(response.statusCode).send(response.data);
-    } catch (error) {
-      res.status(500).send("Something went wrong");
-    }
-  }
+  validate(productIdParamSchema, "params"),
+  asyncHandler(async (req: AuthedRequest, res) => {
+    const cart = await deleteItemInCart({
+      productId: req.params.productId,
+      userId: String(req.user._id),
+    });
+    res.status(200).json(cart);
+  })
 );
 
-router.delete("/", validateJWT, async (req: ExtenedRequest, res) => {
-  try {
-    const userId = req?.user?._id;
-    const response = await clearCart({ userId });
-    res.status(response.statusCode).send(response.data);
-  } catch (error) {
-    res.status(500).send("Something went wrong");
-  }
-});
+router.delete(
+  "/",
+  asyncHandler(async (req: AuthedRequest, res) => {
+    const cart = await clearCart({ userId: String(req.user._id) });
+    res.status(200).json(cart);
+  })
+);
 
-router.post("/checkout", validateJWT, async (req: ExtenedRequest, res) => {
-  try {
-    const userId = req?.user?._id;
-    const { address, fullName, cvc, exp, cardNumber } = req.body;
-    const response = await checkOut({
-      userId,
+router.post(
+  "/checkout",
+  validate(checkoutSchema),
+  asyncHandler(async (req: AuthedRequest, res) => {
+    // No card number, CVC or expiry: the browser keeps those.
+    const { address, fullName, payment } = req.body;
+    const order = await checkOut({
+      userId: String(req.user._id),
       address,
       fullName,
-      cvc,
-      exp,
-      cardNumber,
+      payment,
     });
-    res.status(response.statusCode).send(response.data);
-  } catch (error) {
-    res.status(500).send("Something went wrong");
-  }
-});
+    res.status(201).json(order);
+  })
+);
 
-//--- route for the idea depends on the quantity removal
-// router.delete("/items", validateJWT, async (req: ExtenedRequest, res) => {
-//   const userId = req?.user?._id;
-//   const { productId, quantity } = req.body;
-//   const response = await deleteItemInCart({ productId, quantity, userId });
-//   res.status(response.statusCode).send(response.data);
-// });
 export default router;

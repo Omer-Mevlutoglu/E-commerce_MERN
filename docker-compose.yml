@@ -1,0 +1,69 @@
+# Full local stack:  docker compose up --build
+#
+#   web    → http://localhost:5173
+#   api    → http://localhost:3001   (health: /health)
+#   mongo  → localhost:27017
+#
+# Mongo runs as a single-node replica set so checkout uses the real
+# transactional path rather than the compensating-write fallback.
+
+services:
+  mongo:
+    image: mongo:7
+    container_name: laptopia-mongo
+    command: ["--replSet", "rs0", "--bind_ip_all"]
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo-data:/data/db
+    healthcheck:
+      # Initiates the replica set on first boot, then reports healthy once
+      # the node has been elected primary.
+      test: >
+        mongosh --quiet --eval "
+          try { rs.status().ok }
+          catch (e) {
+            rs.initiate({_id:'rs0',members:[{_id:0,host:'mongo:27017'}]}).ok
+          }
+        "
+      interval: 5s
+      timeout: 10s
+      retries: 20
+      start_period: 10s
+
+  api:
+    build:
+      context: ./backend
+    container_name: laptopia-api
+    restart: unless-stopped
+    depends_on:
+      mongo:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      PORT: 3001
+      DATABASE_URL: mongodb://mongo:27017/laptopia?replicaSet=rs0
+      # Local development only — generate a real one for any deployment.
+      JWT_SECRET: local-development-secret-not-for-production-use
+      JWT_EXPIRES_IN: 7d
+      CORS_ORIGIN: http://localhost:5173
+      TRUST_PROXY: "false"
+      SEED_DEMO_USERS: "true"
+    ports:
+      - "3001:3001"
+
+  web:
+    build:
+      context: ./frontend
+      args:
+        # Baked in at build time — Vite inlines env vars into the bundle.
+        VITE_BASE_URL: http://localhost:3001
+    container_name: laptopia-web
+    restart: unless-stopped
+    depends_on:
+      - api
+    ports:
+      - "5173:80"
+
+volumes:
+  mongo-data:

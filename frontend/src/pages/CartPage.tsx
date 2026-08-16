@@ -27,7 +27,7 @@ const CartPage = () => {
       showError("Cannot add more items. Stock limit reached.");
       return;
     }
-    updateItemInCart(productId, quantity, stock);
+    updateItemInCart(productId, quantity);
   };
 
   const removeItemInCart = (productId: string) => {

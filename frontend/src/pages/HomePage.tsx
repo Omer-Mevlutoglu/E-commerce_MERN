@@ -2,52 +2,60 @@ import { useEffect, useState } from "react";
 import {
   Box,
   Button,
+  Card,
   Container,
   Grid,
   Typography,
-  TextField,
-  Card,
-  useTheme,
   alpha,
+  useTheme,
 } from "@mui/material";
+import { useNavigate } from "react-router-dom";
 import ProductCard from "../Components/ProductCard";
-import { product } from "../types/product";
-
-const BASE_URL = import.meta.env.VITE_BASE_URL;
+import ProductCardSkeleton from "../Components/states/ProductCardSkeleton";
+import StateMessage from "../Components/states/StateMessage";
+import { api, errorMessage } from "../api/client";
+import {
+  CATEGORY_META,
+  Paginated,
+  PRODUCT_CATEGORIES,
+  product,
+} from "../types/product";
 
 const HomePage = () => {
   const theme = useTheme();
+  const navigate = useNavigate();
   const [products, setProducts] = useState<product[]>([]);
-  const [error, setError] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState("");
 
   useEffect(() => {
+    let cancelled = false;
+
     (async () => {
       try {
-        const response = await fetch(`${BASE_URL}/product`);
-        const data = await response.json();
-        setProducts(data);
-      } catch {
-        setError(true);
+        const data = await api.get<Paginated<product>>(
+          "/products?limit=6&sort=newest",
+          { auth: false }
+        );
+        if (!cancelled) setProducts(data.items);
+      } catch (err) {
+        if (!cancelled) setError(errorMessage(err, "Could not load products"));
+      } finally {
+        if (!cancelled) setIsLoading(false);
       }
     })();
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
-
-  if (error) {
-    return (
-      <Box sx={{ textAlign: "center", mt: 4 }}>
-        Something went wrong. Please try again later.
-      </Box>
-    );
-  }
-
-  const featured = products.slice(0, 6);
 
   return (
     <Box sx={{ bgcolor: "background.default" }}>
-      {/* Hero Section with improved styling */}
+      {/* Hero */}
       <Box
         sx={{
-          height: "100vh",
+          minHeight: { xs: "70vh", md: "100vh" },
           backgroundImage: 'url("/images/hero-banner.png")',
           backgroundSize: "cover",
           backgroundPosition: "center",
@@ -58,11 +66,8 @@ const HomePage = () => {
           "&:before": {
             content: '""',
             position: "absolute",
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            backgroundColor: alpha(theme.palette.common.black, 0.4),
+            inset: 0,
+            backgroundColor: alpha(theme.palette.common.black, 0.45),
           },
         }}
       >
@@ -104,6 +109,7 @@ const HomePage = () => {
           <Button
             variant="contained"
             size="large"
+            onClick={() => navigate("/products")}
             sx={{
               py: 1.5,
               px: 4,
@@ -118,198 +124,134 @@ const HomePage = () => {
               },
               transition: "all 0.3s ease",
             }}
-            onClick={() =>
-              window.scrollTo({
-                top: window.innerHeight * 0.9,
-                behavior: "smooth",
-              })
-            }
           >
-            Explore Collection
+            Shop the collection
           </Button>
         </Box>
       </Box>
 
       <Container maxWidth="lg" sx={{ py: 8 }}>
-        {/* Featured Products Section */}
+        {/* Featured */}
         <Box sx={{ mb: 10 }}>
           <Typography
             variant="h3"
-            sx={{
-              fontWeight: 700,
-              mb: 1,
-              textAlign: "center",
-            }}
+            sx={{ fontWeight: 700, mb: 1, textAlign: "center" }}
           >
             Featured Products
           </Typography>
           <Typography
             variant="subtitle1"
-            sx={{
-              mb: 6,
-              textAlign: "center",
-              color: "text.secondary",
-            }}
+            sx={{ mb: 6, textAlign: "center", color: "text.secondary" }}
           >
-            Discover our most popular and trending laptops
+            The latest additions to the shelves
           </Typography>
-          <Grid container spacing={4}>
-            {featured.map((p) => (
-              <Grid item xs={12} sm={6} md={4} key={p._id}>
-                <ProductCard {...p} />
+
+          {isLoading ? (
+            <Grid container spacing={4}>
+              {Array.from({ length: 3 }).map((_, i) => (
+                <Grid item xs={12} sm={6} md={4} key={i}>
+                  <ProductCardSkeleton />
+                </Grid>
+              ))}
+            </Grid>
+          ) : error ? (
+            <StateMessage
+              icon="⚠️"
+              title="Couldn't load products"
+              description={error}
+              actionLabel="Try again"
+              onAction={() => window.location.reload()}
+            />
+          ) : products.length === 0 ? (
+            <StateMessage
+              icon="📦"
+              title="Nothing in the catalogue yet"
+              description="Products will appear here as soon as they are added."
+            />
+          ) : (
+            <>
+              <Grid container spacing={4}>
+                {products.map((p) => (
+                  <Grid item xs={12} sm={6} md={4} key={p._id}>
+                    <ProductCard {...p} />
+                  </Grid>
+                ))}
               </Grid>
-            ))}
-          </Grid>
+
+              <Box sx={{ textAlign: "center", mt: 6 }}>
+                <Button
+                  variant="outlined"
+                  size="large"
+                  onClick={() => navigate("/products")}
+                  sx={{ borderRadius: 20, px: 5, fontWeight: 600 }}
+                >
+                  View all products
+                </Button>
+              </Box>
+            </>
+          )}
         </Box>
 
-        {/* Categories Section */}
-        <Box sx={{ mb: 10 }}>
+        {/* Categories — these now actually filter the catalogue. */}
+        <Box sx={{ mb: 6 }}>
           <Typography
             variant="h3"
-            sx={{
-              fontWeight: 700,
-              mb: 1,
-              textAlign: "center",
-            }}
+            sx={{ fontWeight: 700, mb: 1, textAlign: "center" }}
           >
             Shop by Category
           </Typography>
           <Typography
             variant="subtitle1"
-            sx={{
-              mb: 6,
-              textAlign: "center",
-              color: "text.secondary",
-            }}
+            sx={{ mb: 6, textAlign: "center", color: "text.secondary" }}
           >
             Find the perfect device for your needs
           </Typography>
-          <Grid container spacing={3} justifyContent="center">
-            {(
-              [
-                { name: "Laptops", icon: "💻" },
-                { name: "Gaming", icon: "🎮" },
-                { name: "Ultrabooks", icon: "📱" },
-                { name: "Accessories", icon: "🎧" },
-              ] as const
-            ).map((cat) => (
-              <Grid item xs={6} sm={3} key={cat.name}>
-                <Card
-                  sx={{
-                    p: 3,
-                    height: "100%",
-                    cursor: "pointer",
-                    transition: "all 0.3s ease",
-                    borderRadius: 2,
-                    display: "flex",
-                    flexDirection: "column",
-                    alignItems: "center",
-                    "&:hover": {
-                      transform: "translateY(-8px)",
-                      boxShadow: theme.shadows[8],
-                      bgcolor: alpha(theme.palette.primary.main, 0.05),
-                    },
-                  }}
-                  onClick={() => {
-                    /* navigate to category */
-                  }}
-                >
-                  <Typography
-                    sx={{
-                      fontSize: "2.5rem",
-                      mb: 2,
-                    }}
-                  >
-                    {cat.icon}
-                  </Typography>
-                  <Typography
-                    variant="h6"
-                    sx={{
-                      fontWeight: 600,
-                      textAlign: "center",
-                    }}
-                  >
-                    {cat.name}
-                  </Typography>
-                </Card>
-              </Grid>
-            ))}
-          </Grid>
-        </Box>
 
-        {/* Newsletter Section */}
-        <Box
-          sx={{
-            py: 8,
-            px: { xs: 3, md: 8 },
-            backgroundColor:
-              theme.palette.mode === "light"
-                ? alpha(theme.palette.primary.main, 0.05)
-                : alpha(theme.palette.primary.main, 0.1),
-            borderRadius: 4,
-            textAlign: "center",
-          }}
-        >
-          <Typography
-            variant="h3"
-            sx={{
-              fontWeight: 700,
-              mb: 2,
-            }}
-          >
-            Stay Updated
-          </Typography>
-          <Typography
-            variant="subtitle1"
-            sx={{
-              mb: 4,
-              maxWidth: 600,
-              mx: "auto",
-              color: "text.secondary",
-            }}
-          >
-            Subscribe to our newsletter for exclusive deals, latest product
-            launches, and tech news.
-          </Typography>
-          <Box
-            component="form"
-            sx={{
-              display: "flex",
-              gap: 2,
-              maxWidth: 500,
-              mx: "auto",
-              flexDirection: { xs: "column", sm: "row" },
-            }}
-          >
-            <TextField
-              placeholder="Enter your email"
-              fullWidth
-              sx={{
-                backgroundColor: theme.palette.background.paper,
-                borderRadius: 1,
-                "& .MuiOutlinedInput-root": {
-                  "& fieldset": {
-                    borderColor: alpha(theme.palette.primary.main, 0.2),
-                  },
-                  "&:hover fieldset": {
-                    borderColor: theme.palette.primary.main,
-                  },
-                },
-              }}
-            />
-            <Button
-              variant="contained"
-              size="large"
-              sx={{
-                px: 4,
-                minWidth: { xs: "100%", sm: "auto" },
-                fontWeight: 600,
-                textTransform: "none",
-              }}
-            >
-              Subscribe
-            </Button>
-          </Box>
+          <Grid container spacing={3} justifyContent="center">
+            {PRODUCT_CATEGORIES.map((value) => {
+              const meta = CATEGORY_META[value];
+              return (
+                <Grid item xs={6} sm={3} key={value}>
+                  <Card
+                    role="button"
+                    tabIndex={0}
+                    onClick={() => navigate(`/products?category=${value}`)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        navigate(`/products?category=${value}`);
+                      }
+                    }}
+                    sx={{
+                      p: 3,
+                      height: "100%",
+                      cursor: "pointer",
+                      transition: "all 0.3s ease",
+                      borderRadius: 2,
+                      display: "flex",
+                      flexDirection: "column",
+                      alignItems: "center",
+                      "&:hover, &:focus-visible": {
+                        transform: "translateY(-8px)",
+                        boxShadow: theme.shadows[8],
+                        bgcolor: alpha(theme.palette.primary.main, 0.05),
+                      },
+                    }}
+                  >
+                    <Typography sx={{ fontSize: "2.5rem", mb: 2 }}>
+                      {meta.icon}
+                    </Typography>
+                    <Typography
+                      variant="h6"
+                      sx={{ fontWeight: 600, textAlign: "center" }}
+                    >
+                      {meta.label}
+                    </Typography>
+                  </Card>
+                </Grid>
+              );
+            })}
+          </Grid>
         </Box>
       </Container>
     </Box>
