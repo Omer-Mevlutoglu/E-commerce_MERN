@@ -1,7 +1,11 @@
 import { z } from "zod";
+import { PRODUCT_CATEGORIES } from "../models/productModel";
 
 export const createProductSchema = z.object({
   title: z.string().trim().min(1, "Title is required").max(200),
+  description: z.string().trim().max(2000).optional().default(""),
+  brand: z.string().trim().max(100).optional().default(""),
+  category: z.enum(PRODUCT_CATEGORIES).optional().default("laptops"),
   image: z.string().trim().url("Image must be a valid URL"),
   price: z.coerce
     .number()
@@ -21,5 +25,22 @@ export const updateProductSchema = createProductSchema
     message: "At least one field must be provided",
   });
 
+/** Query string for the catalogue listing. */
+export const listProductsSchema = z.object({
+  page: z.coerce.number().int().positive().default(1),
+  limit: z.coerce.number().int().positive().max(48).default(12),
+  search: z.string().trim().max(100).optional(),
+  category: z.enum(PRODUCT_CATEGORIES).optional(),
+  sort: z
+    .enum(["newest", "price-asc", "price-desc", "title-asc"])
+    .default("newest"),
+  /** Admin listing only — include retired products. */
+  includeInactive: z
+    .enum(["true", "false"])
+    .default("false")
+    .transform((v) => v === "true"),
+});
+
 export type CreateProductInput = z.infer<typeof createProductSchema>;
 export type UpdateProductInput = z.infer<typeof updateProductSchema>;
+export type ListProductsInput = z.infer<typeof listProductsSchema>;

@@ -6,10 +6,11 @@ import { validate } from "../middlewares/validate";
 import {
   createProductSchema,
   updateProductSchema,
+  listProductsSchema,
 } from "../schemas/product.schema";
 import { productIdParamSchema } from "../schemas/common.schema";
 import { asyncHandler } from "../utils/asyncHandler";
-import { getAllProductsForAdmin } from "../services/productService";
+import { listProducts, getProductById } from "../services/productService";
 import {
   createProduct,
   updateProduct,
@@ -24,9 +25,25 @@ router.use(validateJWT, requireAdmin);
 /** Admin listing — unlike the public catalogue, includes retired products. */
 router.get(
   "/",
-  asyncHandler(async (_req, res) => {
-    const products = await getAllProductsForAdmin();
-    res.status(200).json(products);
+  validate(listProductsSchema, "query"),
+  asyncHandler(async (req, res) => {
+    const result = await listProducts({
+      ...(req.query as any),
+      includeInactive: true,
+    });
+    res.status(200).json(result);
+  })
+);
+
+/** Single product for the edit form — retired ones included. */
+router.get(
+  "/:productId",
+  validate(productIdParamSchema, "params"),
+  asyncHandler(async (req, res) => {
+    const product = await getProductById(req.params.productId, {
+      includeInactive: true,
+    });
+    res.status(200).json(product);
   })
 );
 
