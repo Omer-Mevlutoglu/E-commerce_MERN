@@ -17,7 +17,10 @@ const next = vi.fn();
 const handle = (err: unknown) => {
   const res = mockRes();
   errorHandler(err, req, res, next);
-  return { status: res.status.mock.calls[0][0], body: res.json.mock.calls[0][0] };
+  return {
+    status: res.status.mock.calls[0][0],
+    body: res.json.mock.calls[0][0],
+  };
 };
 
 beforeEach(() => {
@@ -30,7 +33,9 @@ afterEach(() => {
 
 describe("errorHandler", () => {
   it("uses the status and code from an AppError", () => {
-    const { status, body } = handle(NotFound("No such product", "ProductNotFound"));
+    const { status, body } = handle(
+      NotFound("No such product", "ProductNotFound")
+    );
 
     expect(status).toBe(404);
     expect(body.error).toBe("ProductNotFound");

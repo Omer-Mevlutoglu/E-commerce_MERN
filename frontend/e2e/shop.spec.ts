@@ -32,9 +32,7 @@ test("a new customer can register, buy something and see the order", async ({
     page.getByRole("heading", { name: "Featured Products" })
   ).toBeVisible();
 
-  const firstCard = page
-    .getByRole("button", { name: "Add to Cart" })
-    .first();
+  const firstCard = page.getByRole("button", { name: "Add to Cart" }).first();
   await expect(firstCard).toBeEnabled();
   await firstCard.click();
 
@@ -123,7 +121,9 @@ test("guests are sent to login and cannot add to cart", async ({ page }) => {
 test("the catalogue can be searched, filtered and paged", async ({ page }) => {
   await page.goto("/products");
 
-  await expect(page.getByRole("heading", { name: "All Products" })).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "All Products" })
+  ).toBeVisible();
   await expect(page.getByText(/products available/)).toBeVisible();
 
   // Filtering puts the choice in the URL so the view can be linked.
@@ -143,9 +143,7 @@ test("a category tile on the home page filters the catalogue", async ({
 }) => {
   await page.goto("/");
 
-  await page
-    .getByRole("button", { name: /Ultrabooks/ })
-    .click();
+  await page.getByRole("button", { name: /Ultrabooks/ }).click();
 
   await expect(page).toHaveURL(/\/products\?category=ultrabooks/);
 });

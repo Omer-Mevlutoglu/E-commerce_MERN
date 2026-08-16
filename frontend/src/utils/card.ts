@@ -8,12 +8,7 @@
  * these same display-only fields.
  */
 
-export type CardBrand =
-  | "visa"
-  | "mastercard"
-  | "amex"
-  | "discover"
-  | "unknown";
+export type CardBrand = "visa" | "mastercard" | "amex" | "discover" | "unknown";
 
 /** Strips spaces and dashes so grouped input like "4242 4242" still parses. */
 export const normalizeCardNumber = (value: string): string =>

@@ -215,8 +215,16 @@ describe("updateItemInCart", () => {
     const { user } = await makeUser();
     const a = await makeProduct({ price: 100, stock: 10 });
     const b = await makeProduct({ price: 200, stock: 10 });
-    await addItemToCart({ productId: idOf(a), quantity: 1, userId: idOf(user) });
-    await addItemToCart({ productId: idOf(b), quantity: 1, userId: idOf(user) });
+    await addItemToCart({
+      productId: idOf(a),
+      quantity: 1,
+      userId: idOf(user),
+    });
+    await addItemToCart({
+      productId: idOf(b),
+      quantity: 1,
+      userId: idOf(user),
+    });
 
     const cart = await updateItemInCart({
       productId: idOf(a),
@@ -270,8 +278,16 @@ describe("deleteItemInCart", () => {
     const { user } = await makeUser();
     const a = await makeProduct({ price: 100, stock: 5 });
     const b = await makeProduct({ price: 30, stock: 5 });
-    await addItemToCart({ productId: idOf(a), quantity: 1, userId: idOf(user) });
-    await addItemToCart({ productId: idOf(b), quantity: 2, userId: idOf(user) });
+    await addItemToCart({
+      productId: idOf(a),
+      quantity: 1,
+      userId: idOf(user),
+    });
+    await addItemToCart({
+      productId: idOf(b),
+      quantity: 2,
+      userId: idOf(user),
+    });
 
     const cart = await deleteItemInCart({
       productId: idOf(a),
@@ -287,8 +303,7 @@ describe("deleteItemInCart", () => {
     const product = await makeProduct();
 
     await expectAppError(
-      () =>
-        deleteItemInCart({ productId: idOf(product), userId: idOf(user) }),
+      () => deleteItemInCart({ productId: idOf(product), userId: idOf(user) }),
       "ItemNotInCart",
       404
     );
@@ -427,7 +442,11 @@ describe("checkOut", () => {
     const { user } = await makeUser();
     const ok = await makeProduct({ stock: 5 });
     const short = await makeProduct({ stock: 5 });
-    await addItemToCart({ productId: idOf(ok), quantity: 1, userId: idOf(user) });
+    await addItemToCart({
+      productId: idOf(ok),
+      quantity: 1,
+      userId: idOf(user),
+    });
     await addItemToCart({
       productId: idOf(short),
       quantity: 3,

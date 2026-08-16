@@ -32,9 +32,7 @@ export const checkoutSchema = z.object({
   address: z.string().trim().min(1, "Address is required").max(500),
   payment: z
     .object({
-      last4: z
-        .string()
-        .regex(/^\d{4}$/, "last4 must be exactly 4 digits"),
+      last4: z.string().regex(/^\d{4}$/, "last4 must be exactly 4 digits"),
       brand: z
         .enum(["visa", "mastercard", "amex", "discover", "unknown"])
         .default("unknown"),

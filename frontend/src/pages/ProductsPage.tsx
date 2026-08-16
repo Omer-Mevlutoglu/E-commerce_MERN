@@ -88,10 +88,9 @@ const ProductsPage = () => {
 
     (async () => {
       try {
-        const result = await api.get<Paginated<product>>(
-          `/products?${query}`,
-          { auth: false }
-        );
+        const result = await api.get<Paginated<product>>(`/products?${query}`, {
+          auth: false,
+        });
         if (!cancelled) setData(result);
       } catch (err) {
         if (!cancelled) setError(errorMessage(err, "Could not load products"));
@@ -167,7 +166,11 @@ const ProductsPage = () => {
         </TextField>
       </Stack>
 
-      <Stack direction="row" spacing={1} sx={{ mb: 4, flexWrap: "wrap", gap: 1 }}>
+      <Stack
+        direction="row"
+        spacing={1}
+        sx={{ mb: 4, flexWrap: "wrap", gap: 1 }}
+      >
         <Chip
           label="All"
           color={category ? "default" : "primary"}

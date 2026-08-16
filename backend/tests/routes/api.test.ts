@@ -30,9 +30,12 @@ describe("routing and error shape", () => {
   });
 
   it("returns field-level details for a validation failure", async () => {
-    const res = await request(app)
-      .post("/api/v1/auth/register")
-      .send({ firstName: "A", lastName: "B", email: "nope", password: "short" });
+    const res = await request(app).post("/api/v1/auth/register").send({
+      firstName: "A",
+      lastName: "B",
+      email: "nope",
+      password: "short",
+    });
 
     expect(res.status).toBe(400);
     expect(res.body.error).toBe("ValidationError");
@@ -61,7 +64,9 @@ describe("auth endpoints", () => {
   };
 
   it("registers and returns a token", async () => {
-    const res = await request(app).post("/api/v1/auth/register").send(credentials);
+    const res = await request(app)
+      .post("/api/v1/auth/register")
+      .send(credentials);
 
     expect(res.status).toBe(201);
     expect(typeof res.body.token).toBe("string");
@@ -84,7 +89,9 @@ describe("auth endpoints", () => {
 
   it("rejects a duplicate email", async () => {
     await request(app).post("/api/v1/auth/register").send(credentials);
-    const res = await request(app).post("/api/v1/auth/register").send(credentials);
+    const res = await request(app)
+      .post("/api/v1/auth/register")
+      .send(credentials);
 
     expect(res.status).toBe(409);
     expect(res.body.error).toBe("EmailTaken");
@@ -93,9 +100,10 @@ describe("auth endpoints", () => {
   it("treats email as case-insensitive", async () => {
     await request(app).post("/api/v1/auth/register").send(credentials);
 
-    const res = await request(app)
-      .post("/api/v1/auth/login")
-      .send({ email: "New.Person@EXAMPLE.com", password: credentials.password });
+    const res = await request(app).post("/api/v1/auth/login").send({
+      email: "New.Person@EXAMPLE.com",
+      password: credentials.password,
+    });
 
     expect(res.status).toBe(200);
   });
@@ -128,7 +136,9 @@ describe("auth endpoints", () => {
   });
 
   it("never returns the password hash", async () => {
-    const res = await request(app).post("/api/v1/auth/register").send(credentials);
+    const res = await request(app)
+      .post("/api/v1/auth/register")
+      .send(credentials);
 
     expect(JSON.stringify(res.body)).not.toContain("$2b$");
   });
@@ -335,13 +345,17 @@ describe("admin products", () => {
 
     // Still present, just retired.
     expect(await productModel.findById(product._id)).not.toBeNull();
-    expect((await request(app).get("/api/v1/products")).body.items).toHaveLength(0);
+    expect(
+      (await request(app).get("/api/v1/products")).body.items
+    ).toHaveLength(0);
 
     const restore = await request(app)
       .post(`/api/v1/admin/products/${idOf(product)}/restore`)
       .set(authHeader(token));
     expect(restore.status).toBe(200);
-    expect((await request(app).get("/api/v1/products")).body.items).toHaveLength(1);
+    expect(
+      (await request(app).get("/api/v1/products")).body.items
+    ).toHaveLength(1);
   });
 
   it("404s when updating a product that does not exist", async () => {
@@ -368,7 +382,10 @@ describe("admin products", () => {
 
   it("fetches a retired product for the edit form", async () => {
     const { token } = await makeAuthedUser({ role: "admin" });
-    const product = await makeProduct({ isActive: false, title: "Retired One" });
+    const product = await makeProduct({
+      isActive: false,
+      title: "Retired One",
+    });
 
     const res = await request(app)
       .get(`/api/v1/admin/products/${idOf(product)}`)
@@ -632,7 +649,9 @@ describe("full purchase journey", () => {
 
     expect(await orderModel.countDocuments()).toBe(2);
 
-    const res = await request(app).get("/api/v1/orders").set(authHeader(a.token));
+    const res = await request(app)
+      .get("/api/v1/orders")
+      .set(authHeader(a.token));
     expect(res.body).toHaveLength(1);
   });
 
@@ -648,7 +667,11 @@ describe("full purchase journey", () => {
     await request(app)
       .post("/api/v1/cart/checkout")
       .set(authHeader(customer.token))
-      .send({ fullName: "C", address: "A", payment: { last4: "1111", brand: "visa" } });
+      .send({
+        fullName: "C",
+        address: "A",
+        payment: { last4: "1111", brand: "visa" },
+      });
 
     const res = await request(app)
       .get("/api/v1/admin/orders")

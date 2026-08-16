@@ -1,5 +1,5 @@
-import { defineConfig } from 'vite'
-import react from '@vitejs/plugin-react'
+import { defineConfig } from "vite";
+import react from "@vitejs/plugin-react";
 
 // https://vite.dev/config/
 export default defineConfig({
@@ -15,13 +15,13 @@ export default defineConfig({
          * rather than making every visitor re-download ~500 kB of MUI.
          */
         manualChunks: {
-          react: ['react', 'react-dom', 'react-router-dom'],
-          mui: ['@mui/material', '@emotion/react', '@emotion/styled'],
-          'mui-icons': ['@mui/icons-material'],
+          react: ["react", "react-dom", "react-router-dom"],
+          mui: ["@mui/material", "@emotion/react", "@emotion/styled"],
+          "mui-icons": ["@mui/icons-material"],
         },
       },
     },
     // The vendor chunks are legitimately large; warn only on app chunks.
     chunkSizeWarningLimit: 600,
   },
-})
+});

@@ -64,10 +64,17 @@ const ProductDetailPage = () => {
 
   if (isLoading) {
     return (
-      <Container maxWidth="lg" sx={{ py: { xs: 12, md: 14 }, minHeight: "80vh" }}>
+      <Container
+        maxWidth="lg"
+        sx={{ py: { xs: 12, md: 14 }, minHeight: "80vh" }}
+      >
         <Grid container spacing={6}>
           <Grid item xs={12} md={6}>
-            <Skeleton variant="rectangular" height={420} sx={{ borderRadius: 4 }} />
+            <Skeleton
+              variant="rectangular"
+              height={420}
+              sx={{ borderRadius: 4 }}
+            />
           </Grid>
           <Grid item xs={12} md={6}>
             <Skeleton width="70%" height={56} />
@@ -86,7 +93,10 @@ const ProductDetailPage = () => {
 
   if (error.message || !item) {
     return (
-      <Container maxWidth="md" sx={{ py: { xs: 12, md: 14 }, minHeight: "80vh" }}>
+      <Container
+        maxWidth="md"
+        sx={{ py: { xs: 12, md: 14 }, minHeight: "80vh" }}
+      >
         <StateMessage
           icon={error.notFound ? "🔍" : "⚠️"}
           title={
@@ -168,7 +178,9 @@ const ProductDetailPage = () => {
                 size="small"
               />
             )}
-            {item.brand && <Chip label={item.brand} size="small" variant="outlined" />}
+            {item.brand && (
+              <Chip label={item.brand} size="small" variant="outlined" />
+            )}
           </Stack>
 
           <Typography variant="h3" sx={{ fontWeight: 700, mb: 2 }}>
@@ -190,15 +202,15 @@ const ProductDetailPage = () => {
               color: outOfStock
                 ? "error.main"
                 : lowStock
-                ? "warning.main"
-                : "success.main",
+                  ? "warning.main"
+                  : "success.main",
             }}
           >
             {outOfStock
               ? "Out of stock"
               : lowStock
-              ? `Only ${item.stock} left in stock`
-              : `In stock — ${item.stock} available`}
+                ? `Only ${item.stock} left in stock`
+                : `In stock — ${item.stock} available`}
           </Typography>
 
           {item.description && (
@@ -215,8 +227,8 @@ const ProductDetailPage = () => {
               !isAuthenticated
                 ? "Please login to add items to cart"
                 : outOfStock
-                ? "This product is out of stock"
-                : ""
+                  ? "This product is out of stock"
+                  : ""
             }
             placement="top"
             arrow
@@ -232,8 +244,8 @@ const ProductDetailPage = () => {
                 {!isAuthenticated
                   ? "Login to Purchase"
                   : outOfStock
-                  ? "Out of Stock"
-                  : "Add to Cart"}
+                    ? "Out of Stock"
+                    : "Add to Cart"}
               </Button>
             </span>
           </Tooltip>

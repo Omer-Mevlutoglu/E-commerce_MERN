@@ -6,7 +6,10 @@
  * to drive every client-side code path, including expiry handling.
  */
 const b64 = (obj: unknown) =>
-  btoa(JSON.stringify(obj)).replace(/=/g, "").replace(/\+/g, "-").replace(/\//g, "_");
+  btoa(JSON.stringify(obj))
+    .replace(/=/g, "")
+    .replace(/\+/g, "-")
+    .replace(/\//g, "_");
 
 export const makeToken = ({
   role = "user",

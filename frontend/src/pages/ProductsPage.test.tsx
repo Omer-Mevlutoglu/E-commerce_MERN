@@ -188,7 +188,9 @@ describe("ProductsPage", () => {
     await screen.findByText("Test Laptop");
 
     const pager = await screen.findByRole("navigation");
-    await userEvent.click(within(pager).getByRole("button", { name: /page 2/i }));
+    await userEvent.click(
+      within(pager).getByRole("button", { name: /page 2/i })
+    );
 
     await waitFor(() => expect(lastQuery.get("page")).toBe("2"));
   });

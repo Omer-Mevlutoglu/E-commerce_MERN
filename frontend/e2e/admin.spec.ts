@@ -61,9 +61,7 @@ test("an admin can create a product and see it in the catalogue", async ({
   await expect(page).toHaveURL("/admin/products/add");
 
   await page.getByLabel("Title").fill(title);
-  await page
-    .getByLabel("Image URL")
-    .fill("https://example.com/e2e-laptop.png");
+  await page.getByLabel("Image URL").fill("https://example.com/e2e-laptop.png");
   await page.getByLabel("Price").fill("1499");
   await page.getByLabel("Stock").fill("7");
   await page.getByRole("button", { name: /create product/i }).click();

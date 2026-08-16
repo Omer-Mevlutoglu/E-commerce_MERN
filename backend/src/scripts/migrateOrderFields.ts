@@ -29,29 +29,34 @@ import { env } from "../config/env";
   });
 
   if (needsRename > 0) {
-    const result = await orders.updateMany({ "orderItems.productTtile": { $exists: true } }, [
-      {
-        $set: {
-          orderItems: {
-            $map: {
-              input: "$orderItems",
-              as: "item",
-              in: {
-                productTitle: {
-                  $ifNull: ["$$item.productTitle", "$$item.productTtile"],
+    const result = await orders.updateMany(
+      { "orderItems.productTtile": { $exists: true } },
+      [
+        {
+          $set: {
+            orderItems: {
+              $map: {
+                input: "$orderItems",
+                as: "item",
+                in: {
+                  productTitle: {
+                    $ifNull: ["$$item.productTitle", "$$item.productTtile"],
+                  },
+                  productImage: "$$item.productImage",
+                  unitPrice: {
+                    $ifNull: ["$$item.unitPrice", "$$item.unitprice"],
+                  },
+                  quantity: "$$item.quantity",
                 },
-                productImage: "$$item.productImage",
-                unitPrice: {
-                  $ifNull: ["$$item.unitPrice", "$$item.unitprice"],
-                },
-                quantity: "$$item.quantity",
               },
             },
           },
         },
-      },
-    ]);
-    console.log(`[migrate] renamed line-item fields on ${result.modifiedCount} order(s)`);
+      ]
+    );
+    console.log(
+      `[migrate] renamed line-item fields on ${result.modifiedCount} order(s)`
+    );
   } else {
     console.log("[migrate] no orders need the field rename");
   }
@@ -70,7 +75,9 @@ import { env } from "../config/env";
       {},
       { $unset: { cardNumber: "", cvc: "", exp: "" } }
     );
-    console.log(`[migrate] stripped card fields from ${result.modifiedCount} order(s)`);
+    console.log(
+      `[migrate] stripped card fields from ${result.modifiedCount} order(s)`
+    );
   } else {
     console.log("[migrate] no orders hold card data");
   }
@@ -81,7 +88,9 @@ import { env } from "../config/env";
     { $set: { payment: { method: "mock", status: "paid" } } }
   );
   if (noPayment.modifiedCount > 0) {
-    console.log(`[migrate] backfilled payment on ${noPayment.modifiedCount} order(s)`);
+    console.log(
+      `[migrate] backfilled payment on ${noPayment.modifiedCount} order(s)`
+    );
   }
 
   // ── 4. Give existing orders a fulfilment status ───────────────────────
@@ -100,7 +109,9 @@ import { env } from "../config/env";
     { $set: { isActive: true } }
   );
   if (activated.modifiedCount > 0) {
-    console.log(`[migrate] marked ${activated.modifiedCount} product(s) active`);
+    console.log(
+      `[migrate] marked ${activated.modifiedCount} product(s) active`
+    );
   }
 
   // ── 6. Backfill the catalogue fields added in §1.4 ────────────────────

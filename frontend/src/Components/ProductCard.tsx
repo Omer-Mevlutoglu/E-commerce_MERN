@@ -99,7 +99,11 @@ export default function ProductCard({
           >
             <Typography
               variant="h6"
-              sx={{ color: "primary.main", fontWeight: 700, fontSize: "1.25rem" }}
+              sx={{
+                color: "primary.main",
+                fontWeight: 700,
+                fontSize: "1.25rem",
+              }}
             >
               ${price.toFixed(2)}
             </Typography>
@@ -126,8 +130,8 @@ export default function ProductCard({
             !isAuthenticated
               ? "Please login to add items to cart"
               : outOfStock
-              ? "This product is out of stock"
-              : ""
+                ? "This product is out of stock"
+                : ""
           }
           placement="top"
           arrow
@@ -162,8 +166,8 @@ export default function ProductCard({
               {!isAuthenticated
                 ? "Login to Purchase"
                 : outOfStock
-                ? "Out of Stock"
-                : "Add to Cart"}
+                  ? "Out of Stock"
+                  : "Add to Cart"}
             </Button>
           </span>
         </Tooltip>

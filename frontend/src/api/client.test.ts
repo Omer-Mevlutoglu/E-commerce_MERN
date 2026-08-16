@@ -71,7 +71,10 @@ describe("apiFetch", () => {
 
   it("handles a 204 with no body", async () => {
     server.use(
-      http.delete(`${API}/admin/products/x`, () => new HttpResponse(null, { status: 204 }))
+      http.delete(
+        `${API}/admin/products/x`,
+        () => new HttpResponse(null, { status: 204 })
+      )
     );
 
     await expect(api.delete("/admin/products/x")).resolves.toBeUndefined();
@@ -101,16 +104,20 @@ describe("apiFetch", () => {
       )
     );
 
-    await api.post("/auth/register", {}, { auth: false }).catch((err: ApiError) => {
-      expect(err.fieldMessage).toBe("Password must be at least 8 characters");
-    });
+    await api
+      .post("/auth/register", {}, { auth: false })
+      .catch((err: ApiError) => {
+        expect(err.fieldMessage).toBe("Password must be at least 8 characters");
+      });
   });
 
   it("calls onUnauthorized when a 401 comes back with a token attached", async () => {
     const onUnauthorized = vi.fn();
     configureApiClient({ getToken: () => "expired", onUnauthorized });
     server.use(
-      http.get(`${API}/cart`, () => apiError(401, "TokenExpired", "Session expired"))
+      http.get(`${API}/cart`, () =>
+        apiError(401, "TokenExpired", "Session expired")
+      )
     );
 
     await api.get("/cart").catch(() => {});
@@ -133,7 +140,10 @@ describe("apiFetch", () => {
 
   it("still throws when the error body is not JSON", async () => {
     server.use(
-      http.get(`${API}/cart`, () => new HttpResponse("gateway timeout", { status: 504 }))
+      http.get(
+        `${API}/cart`,
+        () => new HttpResponse("gateway timeout", { status: 504 })
+      )
     );
 
     await api.get("/cart").catch((err: ApiError) => {
@@ -153,7 +163,9 @@ describe("errorMessage", () => {
   });
 
   it("uses a plain Error's message", () => {
-    expect(errorMessage(new Error("network down"), "fallback")).toBe("network down");
+    expect(errorMessage(new Error("network down"), "fallback")).toBe(
+      "network down"
+    );
   });
 
   it("falls back for a non-Error throw", () => {

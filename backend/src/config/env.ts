@@ -23,9 +23,7 @@ const envSchema = z.object({
     ),
 
   // 32 chars minimum: short secrets make JWT signatures cheap to brute-force.
-  JWT_SECRET: z
-    .string()
-    .min(32, "JWT_SECRET must be at least 32 characters"),
+  JWT_SECRET: z.string().min(32, "JWT_SECRET must be at least 32 characters"),
 
   JWT_EXPIRES_IN: z.string().default("7d"),
 

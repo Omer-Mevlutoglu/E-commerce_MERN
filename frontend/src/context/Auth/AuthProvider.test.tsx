@@ -9,8 +9,15 @@ import { makeToken, expiredToken } from "../../test/token";
 
 /** Renders the context values so assertions can read them from the DOM. */
 const Probe = () => {
-  const { isAuthenticated, isAdmin, username, userRole, myOrders, logout, getMyOrders } =
-    useAuth();
+  const {
+    isAuthenticated,
+    isAdmin,
+    username,
+    userRole,
+    myOrders,
+    logout,
+    getMyOrders,
+  } = useAuth();
 
   return (
     <div>
@@ -47,7 +54,9 @@ describe("AuthProvider", () => {
     renderAuth();
 
     expect(screen.getByTestId("authed")).toHaveTextContent("true");
-    expect(screen.getByTestId("username")).toHaveTextContent("restored@example.com");
+    expect(screen.getByTestId("username")).toHaveTextContent(
+      "restored@example.com"
+    );
   });
 
   it("reads the role from the token", () => {

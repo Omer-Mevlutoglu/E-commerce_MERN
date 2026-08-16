@@ -63,7 +63,10 @@ describe("CartPage", () => {
     server.use(
       http.get(`${API}/cart`, () => HttpResponse.json(cartOf(1))),
       http.put(`${API}/cart/items`, async ({ request }) => {
-        sent = (await request.json()) as { productId: string; quantity: number };
+        sent = (await request.json()) as {
+          productId: string;
+          quantity: number;
+        };
         return HttpResponse.json(cartOf(2));
       })
     );
@@ -81,7 +84,10 @@ describe("CartPage", () => {
     server.use(
       http.get(`${API}/cart`, () => HttpResponse.json(cartOf(3))),
       http.put(`${API}/cart/items`, async ({ request }) => {
-        sent = (await request.json()) as { productId: string; quantity: number };
+        sent = (await request.json()) as {
+          productId: string;
+          quantity: number;
+        };
         return HttpResponse.json(cartOf(2));
       })
     );
@@ -109,9 +115,7 @@ describe("CartPage", () => {
 
     await userEvent.click(screen.getByRole("button", { name: "+" }));
 
-    expect(
-      await screen.findByText(/stock limit reached/i)
-    ).toBeInTheDocument();
+    expect(await screen.findByText(/stock limit reached/i)).toBeInTheDocument();
     expect(called).toBe(false);
   });
 

@@ -44,8 +44,12 @@ const MyOrdersPage = () => {
                     </Typography>
                     {order.status && (
                       <Chip
-                        label={ORDER_STATUS_META[order.status]?.label ?? order.status}
-                        color={ORDER_STATUS_META[order.status]?.color ?? "default"}
+                        label={
+                          ORDER_STATUS_META[order.status]?.label ?? order.status
+                        }
+                        color={
+                          ORDER_STATUS_META[order.status]?.color ?? "default"
+                        }
                         size="small"
                       />
                     )}

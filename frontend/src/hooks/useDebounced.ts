@@ -6,7 +6,7 @@ import { useEffect, useState } from "react";
  * Used by the search box so typing does not fire a request per keystroke, and
  * does not push a history entry per keystroke either.
  */
-export const useDebounced = <T,>(value: T, delay = 400): T => {
+export const useDebounced = <T>(value: T, delay = 400): T => {
   const [debounced, setDebounced] = useState(value);
 
   useEffect(() => {

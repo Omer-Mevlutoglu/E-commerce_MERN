@@ -61,7 +61,8 @@ const AdminEditProductPage = () => {
           stock: String(p.stock),
         });
       } catch (err) {
-        if (!cancelled) setLoadError(errorMessage(err, "Could not load product"));
+        if (!cancelled)
+          setLoadError(errorMessage(err, "Could not load product"));
       } finally {
         if (!cancelled) setIsLoading(false);
       }

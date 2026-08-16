@@ -46,7 +46,9 @@ describe("validateJWT", () => {
 
   it("rejects a token signed with the wrong secret", async () => {
     const { user } = await makeUser();
-    const forged = tokenFor(user, { secret: "a-different-secret-32-chars-long!!" });
+    const forged = tokenFor(user, {
+      secret: "a-different-secret-32-chars-long!!",
+    });
 
     const res = await request(app).get(PROTECTED).set(authHeader(forged));
 
