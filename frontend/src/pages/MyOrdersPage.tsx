@@ -1,9 +1,9 @@
 import Container from "@mui/material/Container";
 import Typography from "@mui/material/Typography";
-import { Box, Card, CardContent, CardMedia, Grid2 } from "@mui/material";
+import { Box, Card, CardContent, CardMedia, Chip, Grid2 } from "@mui/material";
 import { useAuth } from "../context/Auth/AuthContext";
 import { useEffect } from "react";
-import { Order, OrderItem } from "../types/Order";
+import { Order, OrderItem, ORDER_STATUS_META } from "../types/Order";
 
 const MyOrdersPage = () => {
   const { getMyOrders, myOrders } = useAuth();
@@ -30,9 +30,26 @@ const MyOrdersPage = () => {
             <Grid2 size={{ xs: 12, md: 6 }} key={order._id}>
               <Card sx={{ boxShadow: 3, borderRadius: 2 }}>
                 <CardContent>
-                  <Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>
-                    Order #{order._id}
-                  </Typography>
+                  <Box
+                    sx={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "flex-start",
+                      gap: 1,
+                      mb: 2,
+                    }}
+                  >
+                    <Typography variant="h6" sx={{ fontWeight: 600 }}>
+                      Order #{order._id}
+                    </Typography>
+                    {order.status && (
+                      <Chip
+                        label={ORDER_STATUS_META[order.status]?.label ?? order.status}
+                        color={ORDER_STATUS_META[order.status]?.color ?? "default"}
+                        size="small"
+                      />
+                    )}
+                  </Box>
                   {order.createdAt && (
                     <Typography variant="body2" color="text.secondary">
                       Placed on{" "}
