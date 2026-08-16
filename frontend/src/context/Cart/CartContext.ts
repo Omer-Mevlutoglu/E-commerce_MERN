@@ -4,6 +4,7 @@ import { CartItem } from "../../types/CartItem";
 interface CartContextType {
   cartItem: CartItem[];
   totalAmount: number;
+  isLoading: boolean;
   addItemToCart: (productId: string) => void;
   // `stock` was previously passed in and sent to the server, which ignored it —
   // stock is authoritative on the server, never something the client asserts.
@@ -16,6 +17,7 @@ interface CartContextType {
 export const CartContext = createContext<CartContextType>({
   cartItem: [],
   totalAmount: 0,
+  isLoading: false,
   addItemToCart: () => {},
   updateItemInCart: () => {},
   DeleteItemInCart: () => {},

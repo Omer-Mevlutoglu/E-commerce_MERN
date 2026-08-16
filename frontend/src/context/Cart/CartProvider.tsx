@@ -2,7 +2,7 @@ import { FC, PropsWithChildren, useCallback, useEffect, useState } from "react";
 import { CartContext } from "./CartContext";
 import { CartItem } from "../../types/CartItem";
 import { useAuth } from "../Auth/AuthContext";
-import { Alert, Snackbar } from "@mui/material";
+import { useFeedback } from "../Feedback/FeedbackContext";
 import { api, errorMessage } from "../../api/client";
 
 interface ServerCart {
@@ -23,22 +23,9 @@ interface ServerCart {
 const CartProvider: FC<PropsWithChildren> = ({ children }) => {
   const [cartItem, setCartItem] = useState<CartItem[]>([]);
   const [totalAmount, setTotalAmount] = useState<number>(0);
-  const [error, setError] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
   const { token, isAdmin } = useAuth();
-  const [open, setOpen] = useState(false);
-
-  const handleClose = (
-    _event?: React.SyntheticEvent | Event,
-    reason?: string
-  ) => {
-    if (reason === "clickaway") return;
-    setOpen(false);
-  };
-
-  const showError = useCallback((message: string) => {
-    setError(message);
-    setOpen(true);
-  }, []);
+  const { showError, showSuccess } = useFeedback();
 
   /**
    * Flattens the server's populated cart.
@@ -78,6 +65,7 @@ const CartProvider: FC<PropsWithChildren> = ({ children }) => {
     }
 
     let cancelled = false;
+    setIsLoading(true);
 
     (async () => {
       try {
@@ -85,6 +73,8 @@ const CartProvider: FC<PropsWithChildren> = ({ children }) => {
         if (!cancelled) applyCart(cart);
       } catch (err) {
         if (!cancelled) showError(errorMessage(err, "Failed to get cart data"));
+      } finally {
+        if (!cancelled) setIsLoading(false);
       }
     })();
 
@@ -95,7 +85,10 @@ const CartProvider: FC<PropsWithChildren> = ({ children }) => {
 
   const addItemToCart = async (productId: string) => {
     try {
-      applyCart(await api.post<ServerCart>("/cart/items", { productId, quantity: 1 }));
+      applyCart(
+        await api.post<ServerCart>("/cart/items", { productId, quantity: 1 })
+      );
+      showSuccess("Added to your cart");
     } catch (err) {
       showError(errorMessage(err, "Could not add that item to your cart"));
     }
@@ -103,7 +96,9 @@ const CartProvider: FC<PropsWithChildren> = ({ children }) => {
 
   const updateItemInCart = async (productId: string, quantity: number) => {
     try {
-      applyCart(await api.put<ServerCart>("/cart/items", { productId, quantity }));
+      applyCart(
+        await api.put<ServerCart>("/cart/items", { productId, quantity })
+      );
     } catch (err) {
       showError(errorMessage(err, "Could not change the quantity"));
     }
@@ -112,6 +107,7 @@ const CartProvider: FC<PropsWithChildren> = ({ children }) => {
   const DeleteItemInCart = async (productId: string) => {
     try {
       applyCart(await api.delete<ServerCart>(`/cart/items/${productId}`));
+      showSuccess("Removed from your cart");
     } catch (err) {
       showError(errorMessage(err, "Failed to remove the item"));
     }
@@ -126,31 +122,20 @@ const CartProvider: FC<PropsWithChildren> = ({ children }) => {
   };
 
   return (
-    <>
-      <CartContext.Provider
-        value={{
-          cartItem,
-          totalAmount,
-          addItemToCart,
-          updateItemInCart,
-          DeleteItemInCart,
-          ClearCart,
-          showError,
-        }}
-      >
-        {children}
-      </CartContext.Provider>
-      <Snackbar
-        open={open}
-        autoHideDuration={4000}
-        onClose={handleClose}
-        anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
-      >
-        <Alert onClose={handleClose} severity="error" sx={{ width: "100%" }}>
-          {error}
-        </Alert>
-      </Snackbar>
-    </>
+    <CartContext.Provider
+      value={{
+        cartItem,
+        totalAmount,
+        isLoading,
+        addItemToCart,
+        updateItemInCart,
+        DeleteItemInCart,
+        ClearCart,
+        showError,
+      }}
+    >
+      {children}
+    </CartContext.Provider>
   );
 };
 
