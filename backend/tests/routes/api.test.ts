@@ -142,7 +142,8 @@ describe("products", () => {
     const res = await request(app).get("/api/v1/products");
 
     expect(res.status).toBe(200);
-    expect(res.body).toHaveLength(2);
+    expect(res.body.items).toHaveLength(2);
+    expect(res.body.total).toBe(2);
   });
 
   it("hides retired products from the public catalogue", async () => {
@@ -151,7 +152,129 @@ describe("products", () => {
 
     const res = await request(app).get("/api/v1/products");
 
-    expect(res.body).toHaveLength(1);
+    expect(res.body.items).toHaveLength(1);
+    expect(res.body.total).toBe(1);
+  });
+
+  it("paginates", async () => {
+    for (let i = 0; i < 5; i++) await makeProduct();
+
+    const page1 = await request(app).get("/api/v1/products?page=1&limit=2");
+    const page3 = await request(app).get("/api/v1/products?page=3&limit=2");
+
+    expect(page1.body.items).toHaveLength(2);
+    expect(page1.body.totalPages).toBe(3);
+    expect(page1.body.hasNextPage).toBe(true);
+
+    expect(page3.body.items).toHaveLength(1);
+    expect(page3.body.hasNextPage).toBe(false);
+  });
+
+  it("returns an empty page rather than an error past the end", async () => {
+    await makeProduct();
+
+    const res = await request(app).get("/api/v1/products?page=99");
+
+    expect(res.status).toBe(200);
+    expect(res.body.items).toHaveLength(0);
+  });
+
+  it("filters by category", async () => {
+    await makeProduct({ category: "gaming" });
+    await makeProduct({ category: "accessories" });
+
+    const res = await request(app).get("/api/v1/products?category=gaming");
+
+    expect(res.body.items).toHaveLength(1);
+    expect(res.body.items[0].category).toBe("gaming");
+  });
+
+  it("rejects an unknown category", async () => {
+    const res = await request(app).get("/api/v1/products?category=spaceships");
+
+    expect(res.status).toBe(400);
+    expect(res.body.error).toBe("ValidationError");
+  });
+
+  it("searches titles and brands", async () => {
+    await makeProduct({ title: "Thinkpad Carbon", brand: "Lenovo" });
+    await makeProduct({ title: "Macbook Air", brand: "Apple" });
+
+    const byTitle = await request(app).get("/api/v1/products?search=Thinkpad");
+    const byBrand = await request(app).get("/api/v1/products?search=Apple");
+
+    expect(byTitle.body.items).toHaveLength(1);
+    expect(byTitle.body.items[0].title).toBe("Thinkpad Carbon");
+    expect(byBrand.body.items[0].brand).toBe("Apple");
+  });
+
+  it("returns nothing for a search that matches nothing", async () => {
+    await makeProduct({ title: "Thinkpad" });
+
+    const res = await request(app).get("/api/v1/products?search=zzzznomatch");
+
+    expect(res.status).toBe(200);
+    expect(res.body.items).toHaveLength(0);
+  });
+
+  it("sorts by price in both directions", async () => {
+    await makeProduct({ price: 300 });
+    await makeProduct({ price: 100 });
+    await makeProduct({ price: 200 });
+
+    const asc = await request(app).get("/api/v1/products?sort=price-asc");
+    const desc = await request(app).get("/api/v1/products?sort=price-desc");
+
+    expect(asc.body.items.map((p: any) => p.price)).toEqual([100, 200, 300]);
+    expect(desc.body.items.map((p: any) => p.price)).toEqual([300, 200, 100]);
+  });
+
+  it("caps the page size", async () => {
+    const res = await request(app).get("/api/v1/products?limit=500");
+
+    expect(res.status).toBe(400);
+    expect(res.body.details.limit).toBeDefined();
+  });
+
+  it("lists the categories the storefront can filter by", async () => {
+    const res = await request(app).get("/api/v1/products/categories");
+
+    expect(res.status).toBe(200);
+    expect(res.body).toContain("gaming");
+  });
+});
+
+describe("product detail", () => {
+  it("returns a single product", async () => {
+    const product = await makeProduct({ title: "Detail Me" });
+
+    const res = await request(app).get(`/api/v1/products/${idOf(product)}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body.title).toBe("Detail Me");
+  });
+
+  it("404s for a product that does not exist", async () => {
+    const res = await request(app).get(
+      "/api/v1/products/000000000000000000000000"
+    );
+
+    expect(res.status).toBe(404);
+    expect(res.body.error).toBe("ProductNotFound");
+  });
+
+  it("404s for a retired product", async () => {
+    const product = await makeProduct({ isActive: false });
+
+    const res = await request(app).get(`/api/v1/products/${idOf(product)}`);
+
+    expect(res.status).toBe(404);
+  });
+
+  it("400s for a malformed id", async () => {
+    const res = await request(app).get("/api/v1/products/nope");
+
+    expect(res.status).toBe(400);
   });
 });
 
@@ -212,13 +335,13 @@ describe("admin products", () => {
 
     // Still present, just retired.
     expect(await productModel.findById(product._id)).not.toBeNull();
-    expect((await request(app).get("/api/v1/products")).body).toHaveLength(0);
+    expect((await request(app).get("/api/v1/products")).body.items).toHaveLength(0);
 
     const restore = await request(app)
       .post(`/api/v1/admin/products/${idOf(product)}/restore`)
       .set(authHeader(token));
     expect(restore.status).toBe(200);
-    expect((await request(app).get("/api/v1/products")).body).toHaveLength(1);
+    expect((await request(app).get("/api/v1/products")).body.items).toHaveLength(1);
   });
 
   it("404s when updating a product that does not exist", async () => {
@@ -240,7 +363,144 @@ describe("admin products", () => {
       .get("/api/v1/admin/products")
       .set(authHeader(token));
 
-    expect(res.body).toHaveLength(1);
+    expect(res.body.items).toHaveLength(1);
+  });
+
+  it("fetches a retired product for the edit form", async () => {
+    const { token } = await makeAuthedUser({ role: "admin" });
+    const product = await makeProduct({ isActive: false, title: "Retired One" });
+
+    const res = await request(app)
+      .get(`/api/v1/admin/products/${idOf(product)}`)
+      .set(authHeader(token));
+
+    expect(res.status).toBe(200);
+    expect(res.body.title).toBe("Retired One");
+  });
+
+  it("updates a product", async () => {
+    const { token } = await makeAuthedUser({ role: "admin" });
+    const product = await makeProduct({ price: 100, title: "Before" });
+
+    const res = await request(app)
+      .put(`/api/v1/admin/products/${idOf(product)}`)
+      .set(authHeader(token))
+      .send({ title: "After", price: 250, category: "gaming" });
+
+    expect(res.status).toBe(200);
+    expect(res.body.title).toBe("After");
+    expect(res.body.price).toBe(250);
+    expect(res.body.category).toBe("gaming");
+  });
+
+  it("rejects an unknown category on create", async () => {
+    const { token } = await makeAuthedUser({ role: "admin" });
+
+    const res = await request(app)
+      .post("/api/v1/admin/products")
+      .set(authHeader(token))
+      .send({
+        title: "X",
+        image: "https://example.com/x.png",
+        price: 1,
+        stock: 1,
+        category: "submarines",
+      });
+
+    expect(res.status).toBe(400);
+    expect(res.body.details.category).toBeDefined();
+  });
+});
+
+describe("order status", () => {
+  const placeOrder = async (customerToken: string) => {
+    const product = await makeProduct({ stock: 5 });
+    await request(app)
+      .post("/api/v1/cart/items")
+      .set(authHeader(customerToken))
+      .send({ productId: idOf(product), quantity: 1 });
+    const res = await request(app)
+      .post("/api/v1/cart/checkout")
+      .set(authHeader(customerToken))
+      .send({ fullName: "C", address: "A" });
+    return res.body._id as string;
+  };
+
+  it("starts a new order as processing", async () => {
+    const customer = await makeAuthedUser();
+
+    await placeOrder(customer.token);
+
+    const orders = await request(app)
+      .get("/api/v1/orders")
+      .set(authHeader(customer.token));
+    expect(orders.body[0].status).toBe("processing");
+  });
+
+  it("lets an admin advance the status", async () => {
+    const customer = await makeAuthedUser();
+    const admin = await makeAuthedUser({ role: "admin" });
+    const orderId = await placeOrder(customer.token);
+
+    const res = await request(app)
+      .patch(`/api/v1/admin/orders/${orderId}/status`)
+      .set(authHeader(admin.token))
+      .send({ status: "shipped" });
+
+    expect(res.status).toBe(200);
+    expect(res.body.status).toBe("shipped");
+  });
+
+  it("shows the new status to the customer", async () => {
+    const customer = await makeAuthedUser();
+    const admin = await makeAuthedUser({ role: "admin" });
+    const orderId = await placeOrder(customer.token);
+
+    await request(app)
+      .patch(`/api/v1/admin/orders/${orderId}/status`)
+      .set(authHeader(admin.token))
+      .send({ status: "delivered" });
+
+    const orders = await request(app)
+      .get("/api/v1/orders")
+      .set(authHeader(customer.token));
+    expect(orders.body[0].status).toBe("delivered");
+  });
+
+  it("rejects a status outside the lifecycle", async () => {
+    const customer = await makeAuthedUser();
+    const admin = await makeAuthedUser({ role: "admin" });
+    const orderId = await placeOrder(customer.token);
+
+    const res = await request(app)
+      .patch(`/api/v1/admin/orders/${orderId}/status`)
+      .set(authHeader(admin.token))
+      .send({ status: "teleported" });
+
+    expect(res.status).toBe(400);
+  });
+
+  it("does not let a customer change an order status", async () => {
+    const customer = await makeAuthedUser();
+    const orderId = await placeOrder(customer.token);
+
+    const res = await request(app)
+      .patch(`/api/v1/admin/orders/${orderId}/status`)
+      .set(authHeader(customer.token))
+      .send({ status: "delivered" });
+
+    expect(res.status).toBe(403);
+  });
+
+  it("404s for an order that does not exist", async () => {
+    const admin = await makeAuthedUser({ role: "admin" });
+
+    const res = await request(app)
+      .patch("/api/v1/admin/orders/000000000000000000000000/status")
+      .set(authHeader(admin.token))
+      .send({ status: "shipped" });
+
+    expect(res.status).toBe(404);
   });
 });
 
@@ -305,7 +565,7 @@ describe("full purchase journey", () => {
 
     // 2. browse
     const catalogue = await request(app).get("/api/v1/products");
-    expect(catalogue.body).toHaveLength(1);
+    expect(catalogue.body.items).toHaveLength(1);
 
     // 3. add to cart, twice — the second call increments
     await request(app)

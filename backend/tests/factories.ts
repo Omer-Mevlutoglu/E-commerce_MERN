@@ -8,15 +8,23 @@ import { env } from "../src/config/env";
 let counter = 0;
 const unique = () => `${Date.now()}-${counter++}`;
 
-export const makeProduct = (overrides: Partial<{
-  title: string;
-  image: string;
-  price: number;
-  stock: number;
-  isActive: boolean;
-}> = {}) =>
+export const makeProduct = (
+  overrides: Partial<{
+    title: string;
+    description: string;
+    brand: string;
+    category: "laptops" | "gaming" | "ultrabooks" | "accessories";
+    image: string;
+    price: number;
+    stock: number;
+    isActive: boolean;
+  }> = {}
+) =>
   productModel.create({
     title: `Laptop ${unique()}`,
+    description: "A test laptop",
+    brand: "TestBrand",
+    category: "laptops",
     image: "https://example.com/laptop.png",
     price: 100,
     stock: 10,
